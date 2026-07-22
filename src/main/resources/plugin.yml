@@ -1,0 +1,18 @@
+name: SkyWars
+main: ru.kiviuly.skywars.SkyWarsPlugin
+version: '${version}'
+api-version: '1.21'
+author: kiviuly
+description: SkyWars minigame (arenas, capsule start, kits, damage-race matches).
+commands:
+  sw:
+    description: SkyWars commands
+    usage: /sw help
+    aliases: [skywars]
+permissions:
+  sw.admin:
+    description: Minigame admin commands
+    default: op
+  sw.admin.debug:
+    description: Minigame debug/simulation commands
+    default: op
