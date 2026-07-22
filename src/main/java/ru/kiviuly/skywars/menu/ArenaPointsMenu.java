@@ -24,6 +24,7 @@ public class ArenaPointsMenu extends Menu
     private static final int SLOT_SPAWN = 11;
     private static final int SLOT_LOBBY = 13;
     private static final int SLOT_MARKERS = 15;
+    private static final int SLOT_CHESTS = 29;
     private static final int SLOT_BACK_HUB = 49;
 
     private final SkyWarsPlugin plugin;
@@ -60,6 +61,11 @@ public class ArenaPointsMenu extends Menu
         inventory.setItem(SLOT_MARKERS, Items.named(Material.ARMOR_STAND,
             Msg.get("points.markers-name"), Msg.getList("points.markers-lore")));
 
+        List<Component> chestLore = new ArrayList<>();
+        chestLore.add(Msg.get("points.chest-count", Msg.ph("n", arena.getChestSpots().size())));
+        chestLore.addAll(Msg.getList("points.chest-lore"));
+        inventory.setItem(SLOT_CHESTS, Items.named(Material.CHEST, Msg.get("points.chest-name"), chestLore));
+
         fillAll(Material.BLACK_STAINED_GLASS_PANE);
         inventory.setItem(SLOT_BACK_HUB, Items.named(Material.OAK_DOOR, Msg.get("menu.back")));
     }
@@ -91,6 +97,7 @@ public class ArenaPointsMenu extends Menu
                 int n = SetupMarkers.placeAll(arena);
                 Msg.send(p, "points.markers-placed", Msg.ph("arena", arena.getId()), Msg.ph("n", n));
             }
+            case SLOT_CHESTS -> new ChestPointsMenu(plugin, arena).open(p);
             case SLOT_BACK_HUB -> new ArenaHubMenu(plugin, arena).open(p);
             default -> {}
         }

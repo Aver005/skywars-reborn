@@ -51,6 +51,11 @@ public class ArenaSettingsMenu extends Menu
         s.add(new Setting(2, "lobbycountdown", Material.CLOCK, 0, 3600, a::getLobbyCountdownSeconds, a::setLobbyCountdownSeconds));
         s.add(new Setting(3, "countdownfull", Material.REPEATER, 0, 3600, a::getCountdownFullSeconds, a::setCountdownFullSeconds));
         s.add(new Setting(4, "duration", Material.COMPASS, 0, 100000, a::getMatchDurationSeconds, a::setMatchDurationSeconds));
+        // SkyWars-специфичные числа (через arena.getSetting/setSetting) — второй ряд.
+        s.add(new Setting(9, "capsuleseconds", Material.GLASS, 1, 60,
+            () -> a.getSetting("capsule-seconds", 5), v -> a.setSetting("capsule-seconds", v)));
+        s.add(new Setting(10, "graceseconds", Material.TOTEM_OF_UNDYING, 1, 60,
+            () -> a.getSetting("grace-seconds", 6), v -> a.setSetting("grace-seconds", v)));
         return s;
     }
 

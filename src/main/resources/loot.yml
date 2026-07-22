@@ -1,0 +1,49 @@
+# ============================================================================
+#  SkyWars — глобальные категории лута сундуков (общие для всех арен).
+#  Редактируются в игре: /sw loot (GUI). Точки-сундуки арены (маркеры) ссылаются
+#  на категории по id — см. /sw gui <арена> -> Точки -> Сундуки.
+#
+#  min/max-per-chest — сколько слотов сундука заполнить этой категорией.
+#  refill-seconds    — через сколько секунд пополнять пустой сундук (0 = не пополнять).
+#  Предметы: спека {type, amount, weight, name, lore, enchants, color, damage, ...};
+#  GUI пересохранит их как ItemStack. weight — вес во взвешенном выборе (по умолч. 1).
+# ============================================================================
+categories:
+  common:
+    name: "<white>Обычный лут"
+    icon: CHEST
+    min-per-chest: 3
+    max-per-chest: 6
+    refill-seconds: 0
+    loot:
+      - {type: STONE_SWORD, weight: 8}
+      - {type: WOODEN_AXE, weight: 6}
+      - {type: BOW, weight: 4}
+      - {type: ARROW, amount: 8, weight: 8}
+      - {type: LEATHER_CHESTPLATE, weight: 6}
+      - {type: CHAINMAIL_HELMET, weight: 3}
+      - {type: GOLDEN_APPLE, weight: 2}
+      - {type: COOKED_BEEF, amount: 4, weight: 10}
+      - {type: OAK_PLANKS, amount: 16, weight: 12}
+      - {type: COBBLESTONE, amount: 16, weight: 10}
+      - {type: ENDER_PEARL, weight: 2}
+      - {type: SNOWBALL, amount: 8, weight: 5}
+  rare:
+    name: "<gold>Редкий лут (центр)"
+    icon: ENDER_CHEST
+    min-per-chest: 4
+    max-per-chest: 8
+    refill-seconds: 0
+    loot:
+      - {type: IRON_SWORD, weight: 5}
+      - {type: DIAMOND_SWORD, weight: 1}
+      - {type: IRON_CHESTPLATE, weight: 3}
+      - {type: DIAMOND_CHESTPLATE, weight: 1}
+      - {type: IRON_HELMET, weight: 3}
+      - {type: GOLDEN_APPLE, weight: 4}
+      - {type: ENCHANTED_GOLDEN_APPLE, weight: 1}
+      - {type: ENDER_PEARL, amount: 2, weight: 4}
+      - {type: BOW, enchants: {power: 2}, weight: 3}
+      - {type: ARROW, amount: 16, weight: 8}
+      - {type: OBSIDIAN, amount: 4, weight: 3}
+      - {type: GOLDEN_CARROT, amount: 6, weight: 6}

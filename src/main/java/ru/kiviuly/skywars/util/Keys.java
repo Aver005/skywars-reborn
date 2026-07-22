@@ -18,6 +18,10 @@ public final class Keys
     public static NamespacedKey MARKER_ARENA;
     /** Доп. данные маркера (имя точки/группа) — опционально. */
     public static NamespacedKey MARKER_EXTRA;
+    /** Id кита на иконке меню выбора/редактора китов. */
+    public static NamespacedKey KIT_ID;
+    /** Id категории лута на иконке меню/палочке настройки сундуков. */
+    public static NamespacedKey CATEGORY_ID;
 
     private Keys() {}
 
@@ -27,5 +31,7 @@ public final class Keys
         MARKER_TYPE = new NamespacedKey(plugin, "marker_type");
         MARKER_ARENA = new NamespacedKey(plugin, "marker_arena");
         MARKER_EXTRA = new NamespacedKey(plugin, "marker_extra");
+        KIT_ID = new NamespacedKey(plugin, "kit_id");
+        CATEGORY_ID = new NamespacedKey(plugin, "category_id");
     }
 }

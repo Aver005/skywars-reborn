@@ -111,6 +111,8 @@ settings:
   name-lobbycountdown: "<gold>Отсчёт в лобби (сек)"
   name-countdownfull: "<gold>Отсчёт при полном лобби (сек)"
   name-duration: "<gold>Длительность матча (сек)"
+  name-capsuleseconds: "<gold>Капсула: удержание (сек)"
+  name-graceseconds: "<gold>Грейс после десанта (сек)"
 
 # ===== точки =====
 points:
@@ -135,6 +137,11 @@ points:
     - "<gray>Снимаются в начале матча."
   markers-busy: "<red>Арена <aqua><arena><red> сейчас в матче."
   markers-placed: "<green>Подсказки расставлены на арене <aqua><arena><green>: <yellow><n>."
+  chest-name: "<gold>Сундуки с лутом"
+  chest-count: "<gray>Точек-сундуков: <yellow><n>"
+  chest-lore:
+    - "<gray>Клик — выбрать категорию и получить маркер."
+    - "<gray>ПКМ маркером по блоку = сундук."
 
 anvil:
   empty: "<red>Введите текст в поле переименования наковальни."
@@ -189,9 +196,14 @@ setup:
   spawn-added: "<green>Спавн (<x>, <y>, <z>) добавлен. Всего: <yellow><n>."
   spawn-removed: "<yellow>Спавн (<x>, <y>, <z>) убран. Осталось: <white><n>."
   not-a-point: "<red>Здесь нет точки спавна (<x>, <y>, <z>)."
+  chest-added: "<green>Сундук (<x>, <y>, <z>) [<aqua><category><green>] добавлен. Всего: <yellow><n>."
+  chest-removed: "<yellow>Точка-сундук (<x>, <y>, <z>) убрана. Осталось: <white><n>."
+  chest-not-a-point: "<red>Здесь нет точки-сундука (<x>, <y>, <z>)."
+  chest-bad-category: "<red>Категория лута <aqua><category><red> не найдена (создайте: /sw loot)."
 
 marker-types:
   spawn: "спавн"
+  chest: "сундук"
 
 # ===== админ =====
 admin:
@@ -235,6 +247,115 @@ skywars:
   # --- M3: капсулы ---
   capsule-ready: "<aqua>Вы в капсуле! Десант через <yellow><n> <aqua>сек — приготовьтесь."
   capsule-open: "<gold><b>Капсулы раскрылись!</b> <yellow>Падайте на свои острова!"
+  # --- M4: селектор кита в лобби ---
+  kit-select-name: "<gold>Выбор набора"
+  kit-select-lore:
+    - "<gray>ПКМ — выбрать стартовый набор."
+  # --- M6: HUD / итоги матча ---
+  hud-leader: "<gray>Лидер урона: <white><player> <red><hearts>❤"
+  win-summary: "<gray><white><player><gray>: убийств <yellow><kills><gray>, урон <red><hearts>❤"
+
+# ===== M4: выбор кита игроком =====
+kit-select:
+  title: "<dark_gray><b>Стартовый набор</b>"
+  none-name: "<red>Без набора"
+  none-lore:
+    - "<gray>Начать без предметов."
+  random-name: "<light_purple>Случайный"
+  random-lore:
+    - "<gray>Случайный набор на старте."
+  chosen-mark: "<green>► выбрано"
+  selected: "<green>Набор: <reset><kit>"
+
+# ===== M4: настройка китов (админ, /sw kits) =====
+kits-admin:
+  title: "<dark_gray><b>Наборы SkyWars</b>"
+  entry-id: "<dark_gray>id: <gray><id>"
+  entry-items: "<gray>Предметов: <yellow><n>"
+  entry-default: "<green>★ набор по умолчанию"
+  entry-actions:
+    - "<yellow>► ЛКМ — редактировать предметы"
+    - "<yellow>► ПКМ — сделать по умолчанию"
+    - "<red>► Shift — удалить"
+  default-info: "<gray>По умолчанию: <yellow><kit>"
+  create-name: "<green>Создать набор"
+  create-lore:
+    - "<gray>Ввести id — откроется редактор."
+  create-anvil-title: "<dark_gray>id набора:"
+  bad-id: "<red>Пустой/некорректный id (a-z, 0-9, _)."
+  exists: "<red>Набор <aqua><id><red> уже есть."
+  created: "<green>Набор <aqua><id><green> создан."
+  deleted: "<yellow>Набор <aqua><id><yellow> удалён."
+  default-set: "<green>Набор <aqua><id><green> — по умолчанию."
+
+# ===== M4: редактор предметов кита =====
+kit-edit:
+  title: "<dark_gray>Набор: "
+  name-btn: "<gold>Имя набора"
+  name-lore:
+    - "<gray>Ввод через наковальню (MiniMessage)."
+  name-anvil-title: "<dark_gray>Имя набора:"
+  name-set: "<green>Имя набора: <reset><name>"
+  icon-btn: "<gold>Иконка = 1-й предмет"
+  icon-lore:
+    - "<gray>Взять материал из слота 1 как иконку."
+  icon-empty: "<red>Положите предмет в первый слот."
+  icon-set: "<green>Иконка: <yellow><material>"
+  done-btn: "<green>Готово"
+  done-lore:
+    - "<gray>Сохранить и вернуться."
+
+# ===== M5: категории лута (админ, /sw loot) =====
+loot-admin:
+  title: "<dark_gray><b>Категории лута</b>"
+  entry-id: "<dark_gray>id: <gray><id>"
+  entry-items: "<gray>Предметов: <yellow><n>"
+  entry-per-chest: "<gray>Слотов/сундук: <yellow><min>–<max>"
+  entry-refill: "<gray>Рефилл: <yellow><n>"
+  refill-off: "выкл"
+  create-name: "<green>Создать категорию"
+  create-lore:
+    - "<gray>Ввести id — откроется редактор."
+  create-anvil-title: "<dark_gray>id категории:"
+  bad-id: "<red>Пустой/некорректный id (a-z, 0-9, _)."
+  exists: "<red>Категория <aqua><id><red> уже есть."
+  created: "<green>Категория <aqua><id><green> создана."
+  deleted: "<yellow>Категория <aqua><id><yellow> удалена."
+
+# ===== M5: редактор категории лута =====
+loot-edit:
+  title: "<dark_gray>Категория: "
+  value: "<gray>Текущее: <yellow><value>"
+  adjust:
+    - "<dark_green>ЛКМ +1 <gray>(Shift +10)"
+    - "<yellow>ПКМ -1 <gray>(Shift -10)"
+  name-min: "<gold>Мин. слотов на сундук"
+  name-max: "<gold>Макс. слотов на сундук"
+  name-refill: "<gold>Рефилл (сек, 0 = выкл)"
+  name-btn: "<gold>Имя категории"
+  name-lore:
+    - "<gray>Ввод через наковальню (MiniMessage)."
+  name-anvil-title: "<dark_gray>Имя категории:"
+  name-set: "<green>Имя категории: <reset><name>"
+  icon-btn: "<gold>Иконка = 1-й предмет"
+  icon-lore:
+    - "<gray>Взять материал из слота 1 как иконку."
+  icon-empty: "<red>Положите предмет в первый слот."
+  icon-set: "<green>Иконка: <yellow><material>"
+  done-btn: "<green>Готово"
+  done-lore:
+    - "<gray>Сохранить и вернуться."
+
+# ===== M5: точки-сундуки арены =====
+chest-points:
+  title: "<dark_gray>Сундуки: "
+  count: "<gray>Точек-сундуков: <yellow><n>"
+  entry-actions:
+    - "<yellow>► Клик — получить маркер этой категории."
+  empty-name: "<red>Категорий лута нет"
+  empty-lore:
+    - "<gray>Сначала создайте: /sw loot"
+  given: "<green>Маркер сундука (<aqua><category><green>) выдан. ПКМ по блоку — точка."
 
 # ===== справка =====
 help:
@@ -255,5 +376,7 @@ help:
     - "<gray>/sw check <ID> <gray>— валидатор"
     - "<gray>/sw start|stop <ID> <gray>— форс-старт/стоп"
     - "<gray>/sw list <gray>— список арен"
+    - "<gray>/sw kits <gray>— стартовые наборы (GUI)"
+    - "<gray>/sw loot <gray>— категории лута сундуков (GUI)"
     - "<gray>/sw reload|save <gray>— перезагрузка/сохранение"
     - "<gray>/sw debuglog on|off|save|clear <gray>— отладочный лог"

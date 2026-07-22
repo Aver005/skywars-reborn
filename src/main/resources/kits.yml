@@ -1,0 +1,45 @@
+# ============================================================================
+#  SkyWars — глобальные стартовые наборы (общие для всех арен).
+#  Редактируются прямо в игре: /sw kits (GUI). Игрок выбирает набор в лобби.
+#  default-kit: <id набора> | random | none
+#  Предметы можно писать спекой ({type: ..., amount, name, lore, enchants, color,
+#  damage, unbreakable, potion, effects, trim}) — GUI пересохранит их как ItemStack.
+# ============================================================================
+default-kit: random
+kits:
+  warrior:
+    name: "<red><bold>Воин</bold>"
+    icon: IRON_SWORD
+    lore:
+      - "<gray>Меч, броня и мясо."
+      - "<gray>Для тех, кто идёт в лоб."
+    items:
+      - {type: STONE_SWORD}
+      - {type: LEATHER_CHESTPLATE, color: RED}
+      - {type: LEATHER_LEGGINGS, color: RED}
+      - {type: COOKED_BEEF, amount: 6}
+      - {type: OAK_PLANKS, amount: 16}
+  archer:
+    name: "<green><bold>Лучник</bold>"
+    icon: BOW
+    lore:
+      - "<gray>Лук, стрелы и мобильность."
+      - "<gray>Держи дистанцию."
+    items:
+      - {type: BOW}
+      - {type: ARROW, amount: 16}
+      - {type: WOODEN_SWORD}
+      - {type: LEATHER_BOOTS, color: LIME}
+      - {type: COOKED_CHICKEN, amount: 4}
+      - {type: OAK_PLANKS, amount: 16}
+  builder:
+    name: "<yellow><bold>Строитель</bold>"
+    icon: OAK_PLANKS
+    lore:
+      - "<gray>Блоки, кирка и мост к соседу."
+      - "<gray>Строй пути к чужим островам."
+    items:
+      - {type: STONE_PICKAXE}
+      - {type: WOODEN_SWORD}
+      - {type: OAK_PLANKS, amount: 48}
+      - {type: COOKED_BEEF, amount: 4}

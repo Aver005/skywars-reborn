@@ -35,6 +35,7 @@ public class Arena
     private int matchDurationSeconds;   // 0 = без лимита времени
     private Location lobby;
     private final List<Location> spawns = new ArrayList<>();
+    private final Map<Location, List<String>> chestSpots = new LinkedHashMap<>(); // точка сундука -> id категорий лута
     private final Map<String, Integer> settings = new LinkedHashMap<>(); // игро-специфичные числа
 
     private GameSession session; // runtime
@@ -78,6 +79,17 @@ public class Arena
         {
             if (o instanceof Location l) {a.spawns.add(l);}
         }
+        ConfigurationSection chests = cfg.getConfigurationSection("chests");
+        if (chests != null)
+        {
+            for (String key : chests.getKeys(false))
+            {
+                ConfigurationSection cs = chests.getConfigurationSection(key);
+                if (cs == null) {continue;}
+                Location loc = cs.getLocation("location");
+                if (loc != null) {a.chestSpots.put(loc, new ArrayList<>(cs.getStringList("categories")));}
+            }
+        }
         ConfigurationSection sec = cfg.getConfigurationSection("settings");
         if (sec != null)
         {
@@ -100,6 +112,17 @@ public class Arena
         cfg.set("match-duration-seconds", matchDurationSeconds);
         cfg.set("lobby", lobby);
         cfg.set("spawns", spawns);
+        if (!chestSpots.isEmpty())
+        {
+            ConfigurationSection chests = cfg.createSection("chests");
+            int i = 0;
+            for (Map.Entry<Location, List<String>> e : chestSpots.entrySet())
+            {
+                ConfigurationSection cs = chests.createSection("c" + i++);
+                cs.set("location", e.getKey());
+                cs.set("categories", new ArrayList<>(e.getValue()));
+            }
+        }
         if (!settings.isEmpty())
         {
             ConfigurationSection sec = cfg.createSection("settings");
@@ -134,6 +157,41 @@ public class Arena
     public Location getLobby() {return lobby;}
     public void setLobby(Location v) {this.lobby = v;}
     public List<Location> getSpawns() {return spawns;}
+
+    // ===== точки-сундуки (id категорий лута на точку) =====
+
+    public Map<Location, List<String>> getChestSpots() {return chestSpots;}
+
+    /** Добавить категорию лута на точку-сундук (создаёт точку при необходимости, без дублей). */
+    public void addChestCategory(Location loc, String categoryId)
+    {
+        chestSpots.computeIfAbsent(loc, k -> new ArrayList<>());
+        List<String> cats = chestSpots.get(loc);
+        if (!cats.contains(categoryId)) {cats.add(categoryId);}
+    }
+
+    /** Убрать точку-сундук целиком. true — точка была. */
+    public boolean removeChestSpot(Location loc)
+    {
+        Location key = chestSpotAt(loc);
+        return key != null && chestSpots.remove(key) != null;
+    }
+
+    /** Ключ точки-сундука по координатам блока (или null). */
+    public Location chestSpotAt(Location block)
+    {
+        for (Location l : chestSpots.keySet())
+        {
+            if (sameBlock(l, block)) {return l;}
+        }
+        return null;
+    }
+
+    private static boolean sameBlock(Location a, Location b)
+    {
+        return a.getWorld() != null && a.getWorld().equals(b.getWorld())
+            && a.getBlockX() == b.getBlockX() && a.getBlockY() == b.getBlockY() && a.getBlockZ() == b.getBlockZ();
+    }
 
     /** Игро-специфичная числовая настройка (getSetting/setSetting) — своё пространство имён у каждой игры. */
     public int getSetting(String key, int def) {return settings.getOrDefault(key, def);}

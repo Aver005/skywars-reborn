@@ -17,6 +17,8 @@ import ru.kiviuly.skywars.arena.SetupMarkers;
 import ru.kiviuly.skywars.game.GameSession;
 import ru.kiviuly.skywars.menu.ArenaHubMenu;
 import ru.kiviuly.skywars.menu.ArenaSelectMenu;
+import ru.kiviuly.skywars.menu.KitsAdminMenu;
+import ru.kiviuly.skywars.menu.LootAdminMenu;
 import ru.kiviuly.skywars.util.DebugLog;
 import ru.kiviuly.skywars.util.Msg;
 
@@ -26,7 +28,7 @@ public class MinigameCommand implements TabExecutor
     private static final List<String> PLAYER_SUBS = List.of("join", "leave", "stats", "help");
     private static final List<String> ADMIN_SUBS = List.of(
         "create", "remove", "enable", "disable", "gui", "setlobby", "addspawn", "set",
-        "check", "start", "stop", "list", "reload", "save", "debuglog");
+        "check", "start", "stop", "list", "reload", "save", "kits", "loot", "debuglog");
     private static final List<String> SET_KEYS = List.of(
         "minplayers", "maxplayers", "lobbycountdown", "countdownfull", "duration");
 
@@ -83,6 +85,8 @@ public class MinigameCommand implements TabExecutor
                 return true;
             }
             case "save" -> {plugin.saveEverything(); Msg.send(p, "admin.saved"); return true;}
+            case "kits" -> {new KitsAdminMenu(plugin).open(p); return true;}
+            case "loot" -> {new LootAdminMenu(plugin).open(p); return true;}
             case "debuglog" -> {handleDebugLog(p, args); return true;}
             default -> {}
         }

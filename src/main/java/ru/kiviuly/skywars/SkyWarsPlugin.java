@@ -7,10 +7,13 @@ import ru.kiviuly.skywars.arena.ArenaManager;
 import ru.kiviuly.skywars.command.MinigameCommand;
 import ru.kiviuly.skywars.game.Minigame;
 import ru.kiviuly.skywars.game.SkyWarsGame;
+import ru.kiviuly.skywars.kit.KitRegistry;
+import ru.kiviuly.skywars.loot.LootRegistry;
 import ru.kiviuly.skywars.listener.ChatListener;
 import ru.kiviuly.skywars.listener.GameListener;
 import ru.kiviuly.skywars.listener.ProtectionListener;
 import ru.kiviuly.skywars.listener.SetupListener;
+import ru.kiviuly.skywars.listener.SkyWarsListener;
 import ru.kiviuly.skywars.menu.MenuListener;
 import ru.kiviuly.skywars.stats.StatsRepository;
 import ru.kiviuly.skywars.util.DebugLog;
@@ -28,6 +31,8 @@ public final class SkyWarsPlugin extends JavaPlugin
 {
     private ArenaManager arenaManager;
     private StatsRepository statsRepository;
+    private KitRegistry kitRegistry;
+    private LootRegistry lootRegistry;
     private Minigame game;
 
     @Override
@@ -43,6 +48,11 @@ public final class SkyWarsPlugin extends JavaPlugin
         try {statsRepository.open();}
         catch (SQLException e) {getLogger().severe("Failed to open stats.db: " + e.getMessage());}
 
+        kitRegistry = new KitRegistry(this);
+        kitRegistry.load();
+        lootRegistry = new LootRegistry(this);
+        lootRegistry.load();
+
         // Точка расширения каркаса: все правила SkyWars — в SkyWarsGame (наследник Minigame).
         game = new SkyWarsGame(this);
 
@@ -54,6 +64,7 @@ public final class SkyWarsPlugin extends JavaPlugin
         pm.registerEvents(new ProtectionListener(this), this);
         pm.registerEvents(new ChatListener(this), this);
         pm.registerEvents(new SetupListener(this), this);
+        pm.registerEvents(new SkyWarsListener(this), this);
 
         MinigameCommand command = new MinigameCommand(this);
         var mg = getCommand("sw");
@@ -84,9 +95,13 @@ public final class SkyWarsPlugin extends JavaPlugin
         Msg.reload();
         DebugLog.reload();
         arenaManager.loadAll();
+        kitRegistry.load();
+        lootRegistry.load();
     }
 
     public ArenaManager arenas() {return arenaManager;}
     public StatsRepository stats() {return statsRepository;}
+    public KitRegistry kits() {return kitRegistry;}
+    public LootRegistry loot() {return lootRegistry;}
     public Minigame game() {return game;}
 }

@@ -1,22 +1,33 @@
 package ru.kiviuly.skywars.game;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.Chest;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import ru.kiviuly.skywars.SkyWarsPlugin;
+import ru.kiviuly.skywars.kit.Kit;
+import ru.kiviuly.skywars.loot.LootCategory;
+import ru.kiviuly.skywars.util.Items;
 import ru.kiviuly.skywars.util.Msg;
 
 /**
@@ -52,6 +63,9 @@ public class SkyWarsGame extends Minigame
     private static final int CAPSULE_TOP_DY = 2;
     /** Сколько секунд действует медленное падение при десанте (с запасом на спуск). */
     private static final int GLIDE_SECONDS = 15;
+
+    /** Для случайного выбора кита ("random"). */
+    private static final Random RANDOM = new Random();
 
     public SkyWarsGame(SkyWarsPlugin plugin)
     {
@@ -131,8 +145,8 @@ public class SkyWarsGame extends Minigame
     public void onStart(GameSession s)
     {
         announceWarmup(s);   // M2: итог разминки перед десантом
+        placeChests(s);      // M5: наполнить сундуки, пока игроки ещё в капсулах
         buildCapsules(s);    // M3: запереть игроков в стеклянные капсулы над островами
-        // M5: расставить и наполнить сундуки из назначенных категорий.
     }
 
     @Override
@@ -221,24 +235,162 @@ public class SkyWarsGame extends Minigame
         s.broadcast("skywars.capsule-open");
     }
 
+    // ===== M5: сундуки с лутом =====
+
+    /** Расставить и наполнить сундуки на назначенных точках; активные — в состояние сессии. */
+    private void placeChests(GameSession s)
+    {
+        Map<Location, List<String>> active = new HashMap<>();
+        for (Map.Entry<Location, List<String>> entry : s.arena().getChestSpots().entrySet())
+        {
+            Location loc = entry.getKey();
+            if (loc.getWorld() == null) {continue;}
+            List<LootCategory> cats = categoriesFor(entry.getValue());
+            if (cats.isEmpty()) {continue;}
+            Block b = loc.getBlock();
+            s.rememberBlock(b); // откат вернёт исходный блок, содержимое исчезнет с ним
+            b.setType(Material.CHEST, false);
+            // держим одиночным: соседние точки не сольются в двойной сундук (иначе ломается рефилл)
+            if (b.getBlockData() instanceof org.bukkit.block.data.type.Chest cd)
+            {
+                cd.setType(org.bukkit.block.data.type.Chest.Type.SINGLE);
+                b.setBlockData(cd, false);
+            }
+            if (b.getState() instanceof Chest chest)
+            {
+                fillChest(chest, cats, false);
+                active.put(loc, new ArrayList<>(entry.getValue()));
+            }
+        }
+        s.data().put("chest-cats", active);
+        s.data().put("refill-pending", new HashSet<Location>());
+    }
+
+    /** Категории точки по id (существующие, без дублей). */
+    private List<LootCategory> categoriesFor(List<String> ids)
+    {
+        List<LootCategory> out = new ArrayList<>();
+        for (String id : ids)
+        {
+            LootCategory c = plugin.loot().get(id);
+            if (c != null && !out.contains(c)) {out.add(c);}
+        }
+        return out;
+    }
+
+    /** Наполнить сундук: initial — очистка + заполнение, refill — добить пустые слоты. */
+    private void fillChest(Chest chest, List<LootCategory> cats, boolean refill)
+    {
+        Inventory inv = chest.getBlockInventory();
+        if (!refill) {inv.clear();}
+        List<Integer> free = new ArrayList<>();
+        for (int i = 0; i < inv.getSize(); i++)
+        {
+            ItemStack cur = inv.getItem(i);
+            if (cur == null || cur.getType().isAir()) {free.add(i);}
+        }
+        Collections.shuffle(free, RANDOM);
+        int idx = 0;
+        for (LootCategory cat : cats)
+        {
+            int count = cat.rollSlotCount(RANDOM);
+            for (int k = 0; k < count && idx < free.size(); k++)
+            {
+                ItemStack item = cat.pickItem(RANDOM);
+                if (item != null) {inv.setItem(free.get(idx++), item);}
+            }
+        }
+    }
+
+    /** Сундук закрыт: если у его категорий включён рефилл — запланировать пополнение пустых слотов. */
+    @SuppressWarnings("unchecked")
+    public void onChestClosed(GameSession s, Block block)
+    {
+        if (s.phase() != GamePhase.RUNNING) {return;}
+        Map<Location, List<String>> active = (Map<Location, List<String>>) s.data().get("chest-cats");
+        Set<Location> pending = (Set<Location>) s.data().get("refill-pending");
+        if (active == null || pending == null) {return;}
+
+        Location key = null;
+        for (Location loc : active.keySet())
+        {
+            if (sameBlock(loc, block.getLocation())) {key = loc; break;}
+        }
+        if (key == null || pending.contains(key)) {return;}
+
+        int refillSec = 0;
+        for (LootCategory c : categoriesFor(active.get(key)))
+        {
+            if (c.getRefillSeconds() > 0)
+            {
+                refillSec = refillSec == 0 ? c.getRefillSeconds() : Math.min(refillSec, c.getRefillSeconds());
+            }
+        }
+        if (refillSec <= 0) {return;}
+        if (block.getState() instanceof Chest chest && isFull(chest.getBlockInventory())) {return;}
+
+        pending.add(key);
+        final Location fkey = key;
+        Bukkit.getScheduler().runTaskLater(plugin, () ->
+        {
+            pending.remove(fkey);
+            if (s.phase() != GamePhase.RUNNING) {return;}
+            if (fkey.getBlock().getState() instanceof Chest c2) {fillChest(c2, categoriesFor(active.get(fkey)), true);}
+        }, Math.max(5, refillSec) * 20L);
+    }
+
+    private static boolean isFull(Inventory inv)
+    {
+        for (ItemStack it : inv.getContents())
+        {
+            if (it == null || it.getType().isAir()) {return false;}
+        }
+        return true;
+    }
+
+    private static boolean sameBlock(Location a, Location b)
+    {
+        return a.getWorld() != null && a.getWorld().equals(b.getWorld())
+            && a.getBlockX() == b.getBlockX() && a.getBlockY() == b.getBlockY() && a.getBlockZ() == b.getBlockZ();
+    }
+
     // ===== хуки жизненного цикла (наполняются по вехам M4–M6) =====
 
     @Override
     public void onLobbyJoin(GameSession s, Player p)
     {
-        // M4: выдать игроку селектор кита в лобби.
+        // Селектор кита в лобби (если киты есть). ПКМ откроет меню (SkyWarsListener).
+        if (!plugin.kits().isEmpty())
+        {
+            p.getInventory().setItem(0, Items.special(Material.CHEST,
+                Msg.get("skywars.kit-select-name"), Msg.getList("skywars.kit-select-lore"), "kit-select"));
+        }
     }
 
     @Override
     public void giveLoadout(GameSession s, Player p)
     {
-        // M4: применить выбранный (или дефолтный/случайный) кит.
+        // Применить выбранный игроком (или дефолтный/случайный) кит.
+        Kit kit = plugin.kits().resolve(kitChoice(s, p.getUniqueId()), RANDOM);
+        if (kit != null) {kit.apply(p);}
+    }
+
+    /** Выбор кита игроком хранится в состоянии сессии (ключ по uuid). */
+    public static String kitChoice(GameSession s, UUID id)
+    {
+        Object o = s.data().get("kit-choice:" + id);
+        return o instanceof String str ? str : null;
+    }
+
+    public static void setKitChoice(GameSession s, UUID id, String choice)
+    {
+        s.data().put("kit-choice:" + id, choice);
     }
 
     @Override
     public void onPlayerEliminated(GameSession s, MatchPlayer mp)
     {
-        // M6: реакция на выбывание (объявление уже делает ядро; здесь — метрики).
+        // Объявление о выбывании и кредит убийств делает ядро — здесь ничего не нужно.
     }
 
     // checkResult НЕ переопределяем: дефолт = последний выживший — ровно то, что нужно SkyWars.
@@ -246,13 +398,45 @@ public class SkyWarsGame extends Minigame
     @Override
     public void onEnd(GameSession s, MatchResult result)
     {
-        // M6: итоги матча (урон/убийства победителя).
+        if (!result.hasWinner()) {return;}
+        Map<UUID, Double> dmg = matchDamage(s);
+        for (UUID id : result.winners())
+        {
+            MatchPlayer mp = s.player(id);
+            if (mp == null) {continue;}
+            s.broadcast("skywars.win-summary",
+                Msg.ph("player", mp.getName()),
+                Msg.ph("kills", mp.getKills()),
+                Msg.ph("hearts", Math.round(dmg.getOrDefault(id, 0.0) / 2.0)));
+        }
     }
 
     @Override
     public List<Component> scoreboardLines(GameSession s, Player viewer)
     {
-        // M6: доп. строки HUD (кит, живые, лидер разминки).
-        return List.of();
+        // Ядро уже рисует арену/фазу/живых/время; добавляем лидера по урону в матче.
+        if (s.phase() != GamePhase.RUNNING) {return List.of();}
+        Map.Entry<UUID, Double> top = matchDamage(s).entrySet().stream()
+            .max(Map.Entry.comparingByValue()).orElse(null);
+        if (top == null) {return List.of();}
+        MatchPlayer mp = s.player(top.getKey());
+        return List.of(Msg.get("skywars.hud-leader",
+            Msg.ph("player", mp != null ? mp.getName() : "?"),
+            Msg.ph("hearts", Math.round(top.getValue() / 2.0))));
+    }
+
+    // ===== M6: учёт нанесённого в матче урона (для HUD/итогов) =====
+
+    /** Учесть нанесённый в матче урон (вызывается из SkyWarsListener). */
+    public void recordMatchDamage(GameSession s, UUID damager, double amount)
+    {
+        if (amount <= 0) {return;}
+        matchDamage(s).merge(damager, amount, Double::sum);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<UUID, Double> matchDamage(GameSession s)
+    {
+        return (Map<UUID, Double>) s.data().computeIfAbsent("match-damage", k -> new HashMap<UUID, Double>());
     }
 }

@@ -46,6 +46,7 @@ public class SetupListener implements Listener
 
         Location loc = e.getClickedBlock().getLocation();
         if ("spawn".equals(type)) {spawnPoint(p, arena, loc);}
+        else if ("chest".equals(type)) {chestPoint(p, arena, loc, pdc.get(Keys.MARKER_EXTRA, PersistentDataType.STRING));}
     }
 
     private void spawnPoint(Player p, Arena arena, Location loc)
@@ -65,6 +66,33 @@ public class SetupListener implements Listener
         Msg.send(p, "setup.spawn-added",
             Msg.ph("x", loc.getBlockX()), Msg.ph("y", loc.getBlockY()), Msg.ph("z", loc.getBlockZ()),
             Msg.ph("n", arena.getSpawns().size()));
+    }
+
+    /** Точка-сундук: ПКМ маркером категории добавляет категорию на блок, Shift+ПКМ убирает точку. */
+    private void chestPoint(Player p, Arena arena, Location loc, String categoryId)
+    {
+        if (p.isSneaking())
+        {
+            boolean removed = arena.removeChestSpot(loc);
+            plugin.arenas().save(arena);
+            Msg.send(p, removed ? "setup.chest-removed" : "setup.chest-not-a-point",
+                Msg.ph("x", loc.getBlockX()), Msg.ph("y", loc.getBlockY()), Msg.ph("z", loc.getBlockZ()),
+                Msg.ph("n", arena.getChestSpots().size()));
+            return;
+        }
+        if (categoryId == null || !plugin.loot().exists(categoryId))
+        {
+            Msg.send(p, "setup.chest-bad-category", Msg.ph("category", String.valueOf(categoryId)));
+            return;
+        }
+        arena.addChestCategory(loc, categoryId);
+        plugin.arenas().save(arena);
+        DebugLog.log(Cat.ADMIN, "chest-add arena=%s at=%s cat=%s total=%d",
+            arena.getId(), DebugLog.at(loc), categoryId, arena.getChestSpots().size());
+        Msg.send(p, "setup.chest-added",
+            Msg.ph("category", categoryId),
+            Msg.ph("x", loc.getBlockX()), Msg.ph("y", loc.getBlockY()), Msg.ph("z", loc.getBlockZ()),
+            Msg.ph("n", arena.getChestSpots().size()));
     }
 
     private static boolean sameBlock(Location a, Location b)
