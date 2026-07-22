@@ -8,7 +8,7 @@ import ru.kiviuly.skywars.SkyWarsPlugin;
 
 /**
  * ТОЧКА РАСШИРЕНИЯ. Логика конкретной мини-игры — один наследник, зарегистрированный
- * в {@link SkyWarsPlugin#onEnable} (замени {@code new TemplateGame(this)}). Класс
+ * в {@link SkyWarsPlugin#onEnable} (наш наследник — {@link SkyWarsGame}). Класс
  * БЕЗ состояния матча: одно на весь плагин; состояние матча живёт в
  * {@link GameSession} ({@link GameSession#data()} + список {@link MatchPlayer}).
  * Все хуки по умолчанию пусты/разумны — переопредели нужные.
@@ -32,6 +32,14 @@ public abstract class Minigame
 
     /** Игрок вошёл в лобби (снапшот уже снят, инвентарь очищен). */
     public void onLobbyJoin(GameSession s, Player p) {}
+
+    /**
+     * PvP-удар в лобби/отсчёте. Ядро реального урона тут не наносит (лобби мирное);
+     * этот хук даёт игре обобщённо среагировать на удар — например, засчитать
+     * «разминку» и показать фидбек. {@code victim} и {@code damager} — оба участники
+     * этой сессии. Дефолт — no-op.
+     */
+    public void onLobbyAttack(GameSession s, Player victim, Player damager, double damage) {}
 
     /** Матч начался: игроки уже на спавнах, SURVIVAL, очищены. Раздай правила/HUD. */
     public void onStart(GameSession s) {}

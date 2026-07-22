@@ -18,3 +18,4 @@ Thumbs.db
 run/
 deploy/
 *.log
+.trae

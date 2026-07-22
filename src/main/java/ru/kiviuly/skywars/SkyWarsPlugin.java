@@ -6,7 +6,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import ru.kiviuly.skywars.arena.ArenaManager;
 import ru.kiviuly.skywars.command.MinigameCommand;
 import ru.kiviuly.skywars.game.Minigame;
-import ru.kiviuly.skywars.game.TemplateGame;
+import ru.kiviuly.skywars.game.SkyWarsGame;
 import ru.kiviuly.skywars.listener.ChatListener;
 import ru.kiviuly.skywars.listener.GameListener;
 import ru.kiviuly.skywars.listener.ProtectionListener;
@@ -19,9 +19,10 @@ import ru.kiviuly.skywars.util.Keys;
 import ru.kiviuly.skywars.util.Msg;
 
 /**
- * SkyWars — платформа мини-игр (шаблон). Ядро игро-независимо: конкретная игра
- * подключается через {@link Minigame} (см. {@link #game}). Чтобы сделать свою
- * игру — замени {@code new TemplateGame(this)} на свой класс (docs/02).
+ * SkyWars — соло last-man-standing на парящих островах. Каркас (арены, жизненный
+ * цикл матча, меню, снапшоты, откат мира, стата, HUD) — обобщённый и игро-независимый;
+ * правила самой игры живут в {@link ru.kiviuly.skywars.game.SkyWarsGame} (наследник
+ * {@link Minigame}), подключённом в {@link #onEnable} через {@link #game}.
  */
 public final class SkyWarsPlugin extends JavaPlugin
 {
@@ -42,8 +43,8 @@ public final class SkyWarsPlugin extends JavaPlugin
         try {statsRepository.open();}
         catch (SQLException e) {getLogger().severe("Failed to open stats.db: " + e.getMessage());}
 
-        // >>> ТОЧКА РАСШИРЕНИЯ: подключи свою игру вместо TemplateGame <<<
-        game = new TemplateGame(this);
+        // Точка расширения каркаса: все правила SkyWars — в SkyWarsGame (наследник Minigame).
+        game = new SkyWarsGame(this);
 
         arenaManager.loadAll();
 

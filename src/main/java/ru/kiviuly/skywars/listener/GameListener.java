@@ -38,7 +38,18 @@ public class GameListener implements Listener
         if (!(e.getEntity() instanceof Player p)) {return;}
         GameSession s = plugin.arenas().sessionOf(p);
         if (s == null) {return;}
-        if (s.phase() != GamePhase.RUNNING) {e.setCancelled(true); return;} // в лобби/отсчёте урона нет
+        if (s.phase() != GamePhase.RUNNING)
+        {
+            // лобби/отсчёт: реального урона нет. PvP-удар между участниками сессии
+            // отдаём игре (обобщённый хук — SkyWars считает им «разминку»).
+            if (e instanceof EntityDamageByEntityEvent by && by.getDamager() instanceof Player damager
+                && plugin.arenas().sessionOf(damager) == s)
+            {
+                s.game().onLobbyAttack(s, p, damager, by.getDamage());
+            }
+            e.setCancelled(true);
+            return;
+        }
 
         MatchPlayer mp = s.player(p.getUniqueId());
         if (mp == null || !mp.isAlive()) {e.setCancelled(true); return;} // спектаторы неуязвимы

@@ -225,9 +225,16 @@ admin:
   debuglog-save-fail: "<red>Не удалось сохранить лог (см. консоль)."
   debuglog-status: "<gray>Отладочный лог: <state> <dark_gray>(в буфере <n>)"
 
-# ===== заглушка игры (замени в своей игре) =====
-template-game:
-  display-name: "Шаблонная мини-игра"
+# ===== SkyWars (тексты игры; пополняется по вехам M2-M6) =====
+skywars:
+  display-name: "SkyWars"
+  # --- M2: разминка «Избиение в лобби» ---
+  warmup-title: "<gold><b>⚔ Топ разминки</b> <gray>(урон в лобби)"
+  warmup-empty: "<gray>В лобби никто не размялся."
+  warmup-entry: "<yellow><place>. <white><player> <gray>— <red><hearts> ❤"
+  # --- M3: капсулы ---
+  capsule-ready: "<aqua>Вы в капсуле! Десант через <yellow><n> <aqua>сек — приготовьтесь."
+  capsule-open: "<gold><b>Капсулы раскрылись!</b> <yellow>Падайте на свои острова!"
 
 # ===== справка =====
 help:
