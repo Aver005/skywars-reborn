@@ -1,9 +1,9 @@
 # .memories/ — база знаний SkyWars
 
-Last updated: 2026-07-22 — шаблон развёрнут. Каркас платформы мини-игр
-(arena / lifecycle / menus / setup-GUI / stats / HUD / commands) + абстрактный
-`Minigame` + заглушка `TemplateGame`. Демо-игры НЕТ (bare framework). Сборка —
-`[?]` (подтверждает основной автор кода). Детали — [STATE.md](STATE.md).
+Last updated: 2026-07-22 — **SkyWars v1** реализован поверх каркаса `mcmgp-template`
+(соло last-man-standing: разминка в лобби, капсулы, киты, сундуки). Игра — в
+`game/SkyWarsGame` (наследник `Minigame`); ядро игро-независимо. Сборка зелёная,
+плейтест `[?]`. Детали — [STATE.md](STATE.md).
 
 Точка входа для любого агента/разработчика. Читай по порядку:
 
@@ -21,6 +21,8 @@ Last updated: 2026-07-22 — шаблон развёрнут. Каркас пл�
   наследование `Minigame`, разбор хуков, пример `SpleefGame`, состояние в `data()`.
 - **Команды и конфиг** — [`docs/03-commands-and-config.md`](../docs/03-commands-and-config.md):
   `/sw`, `config.yml`, `arenas/<id>.yml`, `messages.yml`.
+- **SkyWars: правила + настройка** — [`docs/04-skywars.md`](../docs/04-skywars.md):
+  разминка, капсулы, киты, лут, цепочка настройки арены.
 - **Обзор проекта** — [`README.md`](../README.md).
 
 ## Легенда статусов

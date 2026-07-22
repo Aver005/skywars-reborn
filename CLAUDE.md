@@ -1,26 +1,29 @@
 # SkyWars — читай и работай
 
-Это **шаблон** платформы мини-игр (Paper 26.1.2, Java 25, Gradle). Готовый каркас:
-арены, жизненный цикл матча, сетап-GUI, снапшоты игроков, откат мира, SQLite-стата,
-HUD. Игры внутри нет — только абстрактный `Minigame` и заглушка `TemplateGame`.
-Package root: `ru.kiviuly.skywars`. Твоя задача — двигать каркас, не ломая рабочее.
+**SkyWars** — соло last-man-standing на парящих островах (Paper 26.1.2, Java 25,
+Gradle), построен на переиспользуемом каркасе `mcmgp-template` (арены, жизненный цикл
+матча, сетап-GUI, снапшоты, откат мира, SQLite-стата, HUD). Вся игровая логика — в
+`game/SkyWarsGame` (наследник `Minigame`); ядро осталось игро-независимым.
+Package root: `ru.kiviuly.skywars`. Правила игры — `docs/04-skywars.md`.
 
 ## Порядок действий — без самодеятельности
 
 1. **`.memories/INDEX.md`** — прочитал. Карта базы знаний.
 2. **`.memories/STATE.md`** — узнал, что развёрнуто, что не проверено, где фронт.
 3. Меняешь код? Сначала **`.memories/CONVENTIONS.md`** — стиль и железные правила.
-4. Как устроено ядро — **`docs/01-architecture.md`**. Как делать игру —
-   **`docs/02-making-a-game.md`**. Команды и конфиг — **`docs/03-commands-and-config.md`**.
+4. Как устроено ядро — **`docs/01-architecture.md`**. Правила SkyWars и настройка —
+   **`docs/04-skywars.md`**. Команды и конфиг — **`docs/03-commands-and-config.md`**.
+   Как вообще делают игру на каркасе — `docs/02-making-a-game.md`.
 
-## Это ШАБЛОН — держи каркас чистым
+## Каркас держи чистым (он игро-независим)
 
-- Не тащи в ядро игровую специфику. Правила конкретной игры пишутся **только**
-  через наследник `Minigame` (см. `docs/02`), а не хардкодятся в `arena/`, `game/`
-  движке, `listener/` и т.п.
+- Не тащи в ядро игровую специфику. Правила SkyWars живут **только** в
+  `game/SkyWarsGame` (наследник `Minigame`) + `listener/SkyWarsListener` + свои меню/
+  реестры, а не в `arena/`/`game/`-движке/`listener/GameListener` и т.п.
 - Точка расширения одна: `Minigame` + регистрация в `SkyWarsPlugin.onEnable`
-  (замена `new TemplateGame(this)`). `Minigame` — логика без состояния; состояние
-  матча живёт в `GameSession` (`data()` + список `MatchPlayer`).
+  (`new SkyWarsGame(this)`). `Minigame` — логика без состояния; состояние матча живёт
+  в `GameSession` (`data()` + список `MatchPlayer`). Расширил ядро (напр. `onLobbyAttack`,
+  `Arena.chestSpots`) — сделай это обобщённо, чтобы годилось любой игре.
 - Обобщённые числа игры — в `Arena` через `getSetting/setSetting`, не новые поля
   в `Arena`. Расширяешь ядро — расширяй его обобщённо, чтобы годилось любой игре.
 

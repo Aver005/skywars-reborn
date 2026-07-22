@@ -1,34 +1,27 @@
-# SkyWars — Minecraft Minigame Platform (шаблон)
+# SkyWars — Reborn
 
 ![Paper](https://img.shields.io/badge/Paper-26.1.2-blue?style=flat-square)
 ![Java](https://img.shields.io/badge/Java-25-orange?style=flat-square)
 ![Gradle](https://img.shields.io/badge/Gradle-Kotlin%20DSL-02303A?style=flat-square)
-![Kind](https://img.shields.io/badge/kind-bare%20framework-lightgrey?style=flat-square)
+![Status](https://img.shields.io/badge/status-v1%20%E2%80%94%20сборка%20зелёная%2C%20нужен%20плейтест-yellow?style=flat-square)
 
-Переиспользуемый, **игро-независимый** каркас мини-игр для Paper 26.1.2 (Java 25,
-Gradle). Даёт готовую платформу — арены, жизненный цикл матча, сетап-GUI,
-SQLite-статистику и HUD — с одной точкой расширения, куда ты вставляешь правила
-своей игры. Это **голый** фреймворк: настоящей демо-игры внутри нет, только
-абстрактный класс `Minigame` и заглушка `TemplateGame`, которую ты заменяешь.
+Мини-игра **SkyWars** для Paper 26.1.2 (Java 25, Gradle). Соло last-man-standing на
+парящих островах: пока набирается лобби — **разминка** (урон считается, никто не
+умирает, топ-3 самых буйных перед стартом), затем **десант из стеклянных капсул** на
+свои острова, **киты**, **сундуки со случайным лутом** и бой до последнего живого.
 
-Шаблон вырос из мини-игры «побег из тюрьмы» (last man standing), обобщённой до
-чистого фреймворка. Прежняя игровая специфика вынесена целиком в `Minigame` —
-ядро о ней не знает.
+Построена на переиспользуемом каркасе `mcmgp-template`: всё игро-независимое (арены,
+жизненный цикл матча, сетап-GUI, снапшоты игроков, откат мира, SQLite-стата, HUD)
+берётся из ядра; правила SkyWars живут в одном классе `game/SkyWarsGame`.
 
-## Что даёт из коробки
+## Как играется
 
-- **Арены** — мир, лобби, спавны, лимиты игроков и таймингов плюс обобщённая мапа
-  числовых настроек под твою игру. Мультиарена, один YML-файл на арену.
-- **Жизненный цикл матча** — `LOBBY → COUNTDOWN → RUNNING → ENDING` в одном движке
-  (`GameSession`): отсчёты, таймер длительности, укороченный старт при полном лобби.
-- **Сетап без правки конфигов руками** — `/sw gui <ID>`: хаб настройки, `±`-редактор
-  чисел, выдача маркеров-предметов для лобби и спавнов, валидатор арены перед включением.
-- **Нулевой след** — снапшот игрока до матча и полный откат мира после (изменённые
-  блоки, заспавненные сущности). Игрок не уносит игровые предметы и не теряет свои.
-- **Статистика** — SQLite: победы / поражения / убийства / сыграно, `/sw stats`.
-- **HUD** — сайдбар и босс-бар с фазой и таймером (включаются в конфиге).
-- **Точка расширения** — `Minigame`: наследуешь, реализуешь хуки, регистрируешь.
-  Всё игро-специфичное живёт там; ядро не трогаешь.
+1. **Лобби.** Ждёшь игроков и разминаешься кулаками — урон не проходит, но считается.
+   Тут же выбираешь стартовый **набор** (предмет-селектор). Перед десантом — топ-3.
+2. **Капсулы.** На старте ты заперт в стеклянной капсуле над своим островом. Через
+   пару секунд она исчезает — плавно падаешь на остров со своим набором.
+3. **Бой.** Лутаешь сундуки, строишь мосты, деремся. Упал в пустоту / погиб — спектатор.
+4. **Победа.** Остался один — забирает всё. В HUD видно лидера по урону.
 
 ## Быстрый старт
 
@@ -37,72 +30,45 @@ SQLite-статистику и HUD — с одной точкой расшире
 ./gradlew deploy -PdeployDir=<server>/plugins     # сборка + копия в тестовый сервер
 ```
 
-JDK 25 скачается сам (Gradle toolchain + foojay-resolver) — вручную ставить нечего.
-Без `-PdeployDir` задача `deploy` кладёт jar в `build/deploy` (просто чтобы не падать).
-
-Запусти сервер. Успех выглядит так: строка `[SkyWars] SkyWars enabled` в логе и **ноль**
-стектрейсов. Дальше — арена без единого конфига руками:
+JDK 25 скачается сам (Gradle toolchain + foojay-resolver). Успех на сервере:
+строка `[SkyWars] SkyWars enabled` в логе и **ноль** стектрейсов. Дальше — арена:
 
 ```
-/sw create arena1        создать арену (мир = твой текущий)
-/sw gui arena1           хаб настройки: лобби, спавны, числа
+/sw create arena1        создать арену (мир = твой текущий, лобби = здесь)
+/sw gui arena1           хаб: Точки (лобби / спавны-капсулы / сундуки), Параметры
+/sw kits                 глобальные стартовые наборы (GUI)
+/sw loot                 глобальные категории лута сундуков (GUI)
 /sw check arena1         валидатор — почини CRITICAL
-/sw enable arena1        включить; игроки заходят через /sw или /sw join arena1
+/sw enable arena1        включить; игроки заходят /sw или /sw join arena1
 ```
 
-**Свою игру** пишут ровно в одном месте — наследник `Minigame`. Полная пошаговая
-инструкция с примером класса — в [docs/02-making-a-game.md](docs/02-making-a-game.md).
+Полная цепочка настройки, правила и все нюансы — **[docs/04-skywars.md](docs/04-skywars.md)**.
 
-## Структура пакетов
+## Структура
 
 Package root: `ru.kiviuly.skywars`.
 
 | Пакет | Назначение |
 |---|---|
-| `util/` | `Keys` (PDC-ключи), `Items` (сборка предметов + `fromSpec` из YML-спеки), `Msg` (каталог `messages.yml`), `DebugLog` (`/sw debuglog`) |
-| `arena/` | `Arena` (конфиг площадки), `ArenaManager` (реестр + join/leave), `ArenaCheck` (валидатор), `SetupMarkers` (маркеры точек) |
-| `player/` | `PlayerSnapshot` (снапшот/очистка/откат игрока, переживает рестарт) |
-| `game/` | `GamePhase`, `MatchPlayer`, `MatchResult`, **`Minigame`** (точка расширения), `GameSession` (движок), `TemplateGame` (заглушка) |
-| `stats/` | `StatsRepository` (SQLite: wins/loses/kills/played) |
-| `ui/` | `GameScoreboard` (сайдбар), `GameBossBar` (фаза/таймер) |
-| `menu/` | `Menu` (InventoryHolder) + меню сетапа и выбора арены, `AnvilInputMenu` (ввод текста) |
-| `listener/` | `GameListener`, `ProtectionListener`, `ChatListener`, `SetupListener` |
-| `command/` | `MinigameCommand` (`/sw`) |
-| — | `SkyWarsPlugin` — bootstrap/wiring; держит зарегистрированный `Minigame` (`game()`), `ArenaManager`, `StatsRepository` |
+| `game/` | **`SkyWarsGame`** (все правила), `Minigame` (точка расширения), `GameSession` (движок ядра), `MatchPlayer`, `MatchResult`, `GamePhase` |
+| `kit/` | `Kit`, `KitRegistry` (глобальные киты, `kits.yml`) |
+| `loot/` | `WeightedItem`, `LootCategory`, `LootRegistry` (глобальные категории, `loot.yml`) |
+| `arena/` | `Arena` (+ точки-сундуки), `ArenaManager`, `ArenaCheck`, `SetupMarkers` |
+| `menu/` | сетап-GUI ядра + `KitSelect/KitEditor/KitsAdmin/LootAdmin/LootEditor/ChestPoints` |
+| `listener/` | `GameListener` (ядро) + `SkyWarsListener` (селектор кита, урон, рефилл) |
+| `player/` · `stats/` · `ui/` · `util/` | снапшоты · SQLite · HUD · `Keys`/`Items`/`Msg`/`DebugLog` |
 
-Подробнее — в [docs/01-architecture.md](docs/01-architecture.md).
-
-## Свой проект из шаблона
-
-Для нового проекта на базе шаблона есть скрипт переименования (`rename.sh` для
-Linux/macOS/Git Bash, `rename.bat`/`rename.ps1` для Windows): он ребрендит
-Java-пакет, имя плагина, команду, права, главный класс и артефакт за один проход
-(включая перенос каталога пакета). Запуск — на свежем клоне, до первой сборки,
-из корня репозитория:
-
-```bash
-./rename.sh <new.base.package> <PluginName> <command>
-# пример: ./rename.sh com.acme.spleef Spleef spleef
-```
-```bat
-rem Windows:
-rename.bat com.acme.spleef Spleef spleef
-```
-
-Скрипт правит файлы на месте — сделай коммит/бэкап до запуска и проверь `git diff`
-после. Затем реализуй `Minigame` и собери (`./gradlew build`).
+Архитектура ядра — [docs/01-architecture.md](docs/01-architecture.md); команды и конфиг —
+[docs/03-commands-and-config.md](docs/03-commands-and-config.md).
 
 ## Требования
 
-- **Paper 26.1.2** (требует Java 25).
-- **Java 25** — Gradle toolchain скачает JDK сам, отдельная установка не нужна.
-- Ноль внешних зависимостей плагина, ноль NMS: только публичный Paper API,
-  Adventure/MiniMessage и встроенный в Paper SQLite.
+- **Paper 26.1.2** (Java 25). Gradle toolchain скачает JDK сам.
+- Ноль внешних зависимостей, ноль NMS: публичный Paper API, Adventure/MiniMessage,
+  встроенный в Paper SQLite. Все тексты игрокам — в `messages.yml` (MiniMessage).
 
 ## Для разработчиков и агентов
 
-Маршрут: **[CLAUDE.md](CLAUDE.md)** → [`.memories/INDEX.md`](.memories/INDEX.md).
-Там порядок работы, железные правила и определение «сделано». Как устроено ядро —
-[docs/01-architecture.md](docs/01-architecture.md); как сделать игру —
-[docs/02-making-a-game.md](docs/02-making-a-game.md); команды и конфиг —
-[docs/03-commands-and-config.md](docs/03-commands-and-config.md).
+Маршрут: **[CLAUDE.md](CLAUDE.md)** → [`.memories/INDEX.md`](.memories/INDEX.md) →
+[`.memories/STATE.md`](.memories/STATE.md). Там порядок работы, железные правила и
+определение «сделано». Правила игры и настройка — [docs/04-skywars.md](docs/04-skywars.md).
