@@ -1,77 +1,124 @@
 # STATE — текущее состояние
 
-Last updated: 2026-07-22
+Last updated: 2026-07-24
 
 ## Кратко
 
-**SkyWars v1** реализован поверх каркаса `mcmgp-template`. Соло last-man-standing
-на парящих островах: разминка в лобби (урон считается, никто не умирает), десант из
-стеклянных капсул, выбираемые киты, сундуки со взвешенным лутом. Package root
-`ru.kiviuly.skywars`, плагин `SkyWars`, команда `/sw` (алиас `/skywars`).
+**SkyWars** — соло last-man-standing на парящих островах. С коммита `7c283ea`
+(2026-07-24) репозиторий — **тонкий игровой плагин поверх платформы MgCore**, а не
+самодостаточный каркас. Весь игро-независимый код (арены, движок матча, меню,
+снапшоты, откат мира, стата, HUD, i18n, утилиты) вынесен во **внешний** репозиторий
+`../kiviuly-mg-core`; здесь остались только правила SkyWars.
 
-Игровая логика — в одном классе `game/SkyWarsGame` (наследник `Minigame`),
-подключён в `SkyWarsPlugin.onEnable`. Ядро осталось игро-независимым: единственное
-обобщённое расширение — хук `Minigame.onLobbyAttack` (+ точки-сундуки в `Arena`).
+Package root `ru.kiviuly.skywars`, плагин `SkyWars`, `depend: [MgCore]`.
+**Своей команды больше нет** — админка идёт через `/mg` ядра.
 
-## Что сделано (по вехам, все собираются зелёным)
+## Миграция на MG Core (что изменилось)
 
-- **M1 Каркас** — `SkyWarsGame extends Minigame` вместо `TemplateGame` (удалён);
-  обобщённый хук `Minigame.onLobbyAttack(s, victim, damager, dmg)` + вызов из ядра
-  `GameListener` при лоббийном PvP.
-- **M2 Разминка «Избиение в лобби»** — лоббийный PvP не наносит урон, но копится в
-  `session.data()["warmup-damage"]`; фейковый фидбек (hurt-анимация + звук + отдача);
-  топ-3 «самых буйных» объявляется на старте (`onStart` → `announceWarmup`).
-- **M3 Капсулы** — `onStart` строит стеклянный короб на каждом спавне (спавн арены =
-  точка капсулы над островом), игрок в ADVENTURE; через `capsule-seconds` короб
-  снимается, SURVIVAL + slow-falling + Resistance (грейс) → десант. Стекло под откат
-  (`rememberBlock`).
-- **M4 Киты (глобальные)** — `kit/Kit` + `kit/KitRegistry` (`kits.yml`, 3 примера);
-  выбор в лобби (`KitSelectMenu`, селектор-предмет slot 0, `none`/`random`/дефолт →
-  `KitRegistry.resolve`); GUI-настройка `/sw kits` → `KitsAdminMenu` → `KitEditorMenu`
-  (перетаскивание предметов, захват при закрытии); применение в `giveLoadout`
-  (`Kit.apply` авто-надевает броню).
-- **M5 Сундуки** — `loot/WeightedItem`, `loot/LootCategory` (взвешенный пул +
-  min/max-per-chest + refill-seconds), `loot/LootRegistry` (`loot.yml`, 2 примера,
-  ГЛОБАЛЬНЫЕ); точки-сундуки ПЕР-АРЕНА в `Arena.chestSpots` (маркер `type=chest`,
-  категория в `MARKER_EXTRA`); GUI `/sw loot` → `LootAdminMenu` → `LootEditorMenu`
-  (± настройки + предметы, вес 1); точки — `ChestPointsMenu` из `ArenaPointsMenu`;
-  наполнение в `onStart` (`placeChests`/`fillChest`, одиночные сундуки), рефилл по
-  закрытию (`SkyWarsListener` → `onChestClosed`), откат штатным `editedBlocks`.
-- **M6 Матч/итоги** — победа = последний выживший (дефолтный `checkResult`, не
-  переопределяли); учёт урона в матче (`SkyWarsListener.onPvpDamage` LOW →
-  `recordMatchDamage`, `session.data()["match-damage"]`); HUD-строка «Лидер урона»
-  (`scoreboardLines`); итог победителя (убийства+урон) в `onEnd`; настройки
-  `capsule-seconds`/`grace-seconds` в `ArenaSettingsMenu` (2-й ряд).
+Было ~40 java-файлов каркаса + игры → стало **13 файлов**, только игра
+(`-3546/+176` строк). Каркас удалён из репо, не переписан.
 
-## Новые/изменённые файлы поверх шаблона
+### Куда что уехало
 
-- Новые: `game/SkyWarsGame`, `kit/{Kit,KitRegistry}`, `loot/{WeightedItem,LootCategory,LootRegistry}`,
-  `listener/SkyWarsListener`, `menu/{KitSelectMenu,KitEditorMenu,KitsAdminMenu,LootAdminMenu,LootEditorMenu,ChestPointsMenu}`,
-  ресурсы `kits.yml`, `loot.yml`.
-- Изменены: `game/Minigame` (+onLobbyAttack), `listener/GameListener` (вызов хука),
-  `arena/Arena` (+chestSpots), `listener/SetupListener` (тип `chest`), `util/Keys`
-  (+KIT_ID/CATEGORY_ID), `menu/{ArenaPointsMenu,ArenaSettingsMenu}`,
-  `command/MinigameCommand` (+`kits`/`loot`), `SkyWarsPlugin` (реестры),
-  `messages.yml`, `plugin.yml`. Удалён `game/TemplateGame`.
+| Было (`ru.kiviuly.skywars.*`) | Стало (`ru.kiviuly.mg.api.*`, внешнее) |
+|---|---|
+| `game/GameSession` | `game/Match` (интерфейс-контракт) |
+| `game/Minigame` | `game/Minigame` (абстрактный SPI) |
+| `game/{GamePhase,MatchPlayer,MatchResult}` | `game/{GamePhase,MatchPlayer,MatchResult}` |
+| `arena/{Arena,ArenaManager,ArenaCheck,SetupMarkers}` | `arena/{Arena,ArenaService,SetupMarkers}` |
+| `menu/{Menu,AnvilInputMenu}` + `MenuListener` | `menu/{Menu,AnvilInputMenu}` (листенер — в ядре) |
+| `util/{Msg,Items,Keys,DebugLog}` | `util/{Msg,Items,Keys,DebugLog}` |
+| `player/PlayerSnapshot`, `stats/StatsRepository`, `ui/*` | реализация в `mg-core`, наружу — `stats/StatsService` |
+| `command/MinigameCommand`, `listener/{Game,Chat,Protection,Setup}Listener` | целиком в `mg-core` |
+| `menu/Arena*Menu` (Hub/Points/Select/Settings) | целиком в `mg-core` |
+
+### Ключевые смены API в коде игры
+
+- `GameSession s` → **`Match s`** во всех хуках. `s.plugin()` больше нет — доступ к
+  своим реестрам через поле `plugin` в `SkyWarsGame`, к платформе — через `core`.
+- `Minigame` теперь принимает `MgCore` в конструкторе: `super(core)`, поле `core`
+  (`core.arenas()`, `core.stats()`, `core.transport()`).
+- Регистрация: не «реестр в `onEnable`», а `core.register(game)`, где `core` берётся
+  из Bukkit `ServicesManager` (`load(MgCore.class)`; нет — плагин сам себя выключает).
+- `Arena.chestSpots` → обобщённые **именованные группы точек**:
+  `arena.spots("chest")` → `Map<Location, List<String>>` (теги = id категорий лута),
+  плюс `addSpot/removeSpot/spotAt`. Числа игры по-прежнему `getSetting/setSetting`.
+- `Msg.merge(this)` в `onEnable` — свой `messages.yml` домешивается в общий каталог
+  ядра; ключи игры живут в пространстве `skywars.*`.
+- Админ-подкоманды: `MinigameCommand` не наш — ядро делегирует в
+  `Minigame.onCommand(p, sub, args)` / `tabComplete` / `helpLines` / `onReload`.
+  У SkyWars это `kits`, `loot`, `chests <arena>`.
+
+### Сборка
+
+- `settings.gradle.kts`: `includeBuild("../kiviuly-mg-core")` — **жёсткая привязка к
+  соседнему каталогу на диске**. Артефакт нигде не опубликован: без клона
+  `kiviuly-mg-core` рядом со `skywars-reborn` репозиторий **не собирается**.
+- `build.gradle.kts`: `compileOnly("ru.kiviuly.mg:mg-api:1.0.0")` — в рантайме классы
+  `mg-api` даёт плагин `MgCore` (они вложены в его jar), поэтому только compileOnly.
+- На сервер нужны **два jar-а**: `MgCore.jar` (из `kiviuly-mg-core`, задача
+  `:mg-core:deploy`) и `SkyWars-1.0.0.jar`. Порядок: без MgCore SkyWars не включится.
+
+## Что осталось в репозитории (вся игра)
+
+- `SkyWarsPlugin` — загрузка `MgCore` из ServicesManager, `Msg.merge`, реестры китов/
+  лута, `core.register(game)`, свой листенер. Аксессоры `arenas()/core()/kits()/loot()/game()`.
+- `game/SkyWarsGame` (наследник `Minigame`) — **все правила**: разминка в лобби
+  (`onLobbyAttack`), капсулы (`onStart`/`onTick`), лут-сундуки (`placeChests`/
+  `fillChest`/`onChestClosed`), киты (`onLobbyJoin`/`giveLoadout`), итоги (`onEnd`),
+  HUD-строка (`scoreboardLines`), админ-подкоманды (`onCommand`).
+- `kit/{Kit,KitRegistry}` (`kits.yml`), `loot/{WeightedItem,LootCategory,LootRegistry}`
+  (`loot.yml`) — глобальные, не пер-арена.
+- `listener/SkyWarsListener` — селектор кита (ПКМ), закрытие сундука (рефилл), учёт
+  PvP-урона в матче. Ссылку на игру держит напрямую: в контракте `Match` нет `game()`.
+- `menu/{KitSelectMenu,KitEditorMenu,KitsAdminMenu,LootAdminMenu,LootEditorMenu,ChestPointsMenu}`
+  — наследники `ru.kiviuly.mg.api.menu.Menu`.
 
 ## Статус проверки
 
-- `[DONE]` **Сборка** — `./gradlew build` ЗЕЛЁНЫЙ на каждой вехе,
-  `build/libs/SkyWars-1.0.0.jar`.
-- `[?]` **Смоук/плейтест на сервере** — НЕ проводился (Paper-сервер не поднимался).
-  Ожидаемо: `[SkyWars] SkyWars enabled`, ноль стектрейсов. Проверять по
-  `docs/04-skywars.md` (цепочка настройки + прогон матча).
+- `[DONE]` **Сборка** — `./gradlew build` ЗЕЛЁНАЯ (проверено 2026-07-24 на этом
+  коммите; собирается вместе с `:kiviuly-mg-core:mg-api`), `build/libs/SkyWars-1.0.0.jar`.
+- `[?]` **Смоук/плейтест на сервере** — по-прежнему НЕ проводился, и теперь это
+  сложнее: нужен сервер с **обоими** плагинами. Ожидаемо в логе:
+  `[SkyWars] SkyWars enabled, game registered: skywars`, ноль стектрейсов.
+- `[?]` **Вся админ-цепочка после смены команд** — `/mg` вместо `/sw` не прогонялась
+  ни разу; делегирование `kits`/`loot`/`chests` через ядро не проверено вживую.
 
-## Известные ограничения v1 (осознанно)
+## Дефекты и долги, найденные при ревизии миграции
+
+- `[BUG]` **Капсулы/грейс больше не настраиваются из GUI.** `SkyWarsGame` читает
+  `arena.getSetting("capsule-seconds", 5)` и `"grace-seconds"`, но `ArenaSettingsMenu`
+  уехал в ядро и содержит только ядровые настройки (min/max players, отсчёты,
+  duration) — второй ряд с капсулой/грейсом, добавленный в вехе M6, потерян. Сейчас
+  меняется только ручной правкой `arenas/<id>.yml`. Чинить обобщённо: дать
+  `Minigame` хук на свои строки в меню настроек арены (не хардкодить SkyWars в ядро).
+- `[BUG]` **Документация протухла целиком.** `docs/01-architecture.md`,
+  `02-making-a-game.md`, `03-commands-and-config.md` и `README.md` описывают снесённый
+  внутренний каркас: `/sw`, `GameSession`, `ArenaManager`, `StatsRepository`,
+  `PlayerSnapshot`, «каркас `mcmgp-template`». `CLAUDE.md` — там же. Всё это надо
+  либо переписать под MgCore, либо выкинуть, оставив `04-skywars.md` (правила игры).
+- `[BUG]` **`src/main/resources/config.yml` — мёртвый дубль.** `saveDefaultConfig()`
+  зовётся, но `getConfig()` не читается нигде; секции `arena-defaults`/`match`/`chat`/
+  `hud`/`debug-log` теперь принадлежат конфигу MgCore. Файл вводит в заблуждение
+  (в шапке ещё и ссылка на `/sw gui`) — удалить или оставить только своё.
+- `[TODO]` Неиспользованные хуки новой платформы, на которые стоит посмотреть:
+  `descriptor()` (карточка игры в селекторе хаба), `allowLobbyPvp()`,
+  `onLethalDamage()`, `onCleanup()`, `onPlayerRemoved()`, `onArenaCreated/Removed()`.
+  В частности `onArenaCreated` — естественное место проставить дефолты капсулы/грейса.
+
+## Известные ограничения v1 (осознанно, без изменений)
 
 - GUI-редактор лута пишет всем предметам **вес 1**; кастомные веса — правкой `loot.yml`.
-- Точки-сундуки: клик-блок становится сундуком; ставить их с зазором (одиночные
-  форсятся, но логичнее не впритык). Подсказок-блоков для сундуков нет (только спавны/лобби).
-- Рефилл сундуков по умолчанию выключен (`refill-seconds: 0` в примерах) — классика SkyWars.
-- Смерть в матче → спектатор (без респавна), как договорено.
+- Точки-сундуки: клик-блок становится сундуком, форсится SINGLE (иначе ломается
+  рефилл); подсказок-блоков для сундуков нет (только спавны/лобби).
+- Рефилл сундуков по умолчанию выключен (`refill-seconds: 0`) — классика SkyWars.
+- Смерть в матче → спектатор, без респавна.
 
 ## Следующие шаги
 
-1. Плейтест по `docs/04-skywars.md`, снять `[?]`.
-2. Возможные v2: сундуки-подсказки в мире, веса в GUI, командные режимы, центр-остров,
-   спец-предметы (эндер-жемчуг уже в луте), таблица лидеров урона в HUD пер-игрока.
+1. Поднять сервер с `MgCore.jar` + `SkyWars-1.0.0.jar`, прогнать цепочку настройки и
+   матч, снять оба `[?]`.
+2. Вернуть настройку `capsule-seconds`/`grace-seconds` в GUI — обобщённым хуком в
+   `Minigame`, а не игро-специфичным кодом в ядре.
+3. Переписать/выпилить протухшие `docs/*` + `README.md` + `CLAUDE.md` под MgCore.
+4. Разобраться с мёртвым `config.yml`.
