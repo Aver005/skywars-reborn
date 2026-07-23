@@ -18,6 +18,9 @@ repositories {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:26.1.2.build.74-stable")
+    // Контракты платформы. compileOnly: классы mg-api в рантайме даёт плагин MgCore
+    // (bundled в его jar). Подставляется из соседнего билда через includeBuild (settings).
+    compileOnly("ru.kiviuly.mg:mg-api:1.0.0")
 }
 
 tasks.withType<JavaCompile>().configureEach {

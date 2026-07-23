@@ -240,6 +240,12 @@ admin:
 # ===== SkyWars (тексты игры; пополняется по вехам M2-M6) =====
 skywars:
   display-name: "SkyWars"
+  # --- админ (подкоманды через /mg, делегируются в SkyWarsGame) ---
+  chests-usage: "<yellow>Использование: <white>/mg chests <arena>"
+  help-admin:
+    - "<gold>/mg kits <gray>— редактор наборов"
+    - "<gold>/mg loot <gray>— редактор категорий лута"
+    - "<gold>/mg chests <arena> <gray>— выдать маркеры точек-сундуков"
   # --- M2: разминка «Избиение в лобби» ---
   warmup-title: "<gold><b>⚔ Топ разминки</b> <gray>(урон в лобби)"
   warmup-empty: "<gray>В лобби никто не размялся."

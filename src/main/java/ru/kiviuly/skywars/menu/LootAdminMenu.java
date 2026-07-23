@@ -1,4 +1,6 @@
 package ru.kiviuly.skywars.menu;
+import ru.kiviuly.mg.api.menu.Menu;
+import ru.kiviuly.mg.api.menu.AnvilInputMenu;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -9,8 +11,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import ru.kiviuly.skywars.SkyWarsPlugin;
 import ru.kiviuly.skywars.loot.LootCategory;
-import ru.kiviuly.skywars.util.Items;
-import ru.kiviuly.skywars.util.Msg;
+import ru.kiviuly.mg.api.util.Items;
+import ru.kiviuly.mg.api.util.Msg;
 
 /**
  * Хаб категорий лута ({@code /sw loot}): список глобальных категорий, создание,

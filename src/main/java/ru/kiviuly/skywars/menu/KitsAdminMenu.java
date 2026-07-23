@@ -1,4 +1,6 @@
 package ru.kiviuly.skywars.menu;
+import ru.kiviuly.mg.api.menu.Menu;
+import ru.kiviuly.mg.api.menu.AnvilInputMenu;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,8 +16,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import ru.kiviuly.skywars.SkyWarsPlugin;
 import ru.kiviuly.skywars.kit.Kit;
-import ru.kiviuly.skywars.util.Items;
-import ru.kiviuly.skywars.util.Msg;
+import ru.kiviuly.mg.api.util.Items;
+import ru.kiviuly.mg.api.util.Msg;
 
 /**
  * Хаб настройки китов ({@code /sw kits}): список наборов, создание, дефолт, удаление,

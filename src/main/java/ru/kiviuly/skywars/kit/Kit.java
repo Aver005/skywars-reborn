@@ -12,8 +12,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import ru.kiviuly.skywars.util.Items;
-import ru.kiviuly.skywars.util.Msg;
+import ru.kiviuly.mg.api.util.Items;
+import ru.kiviuly.mg.api.util.Msg;
 
 /**
  * Стартовый набор (кит): предметы + иконка/имя/лор для меню выбора. Глобальный —

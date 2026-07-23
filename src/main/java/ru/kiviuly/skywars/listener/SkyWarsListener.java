@@ -10,23 +10,29 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import ru.kiviuly.mg.api.game.GamePhase;
+import ru.kiviuly.mg.api.game.Match;
+import ru.kiviuly.mg.api.game.MatchPlayer;
+import ru.kiviuly.mg.api.util.Items;
 import ru.kiviuly.skywars.SkyWarsPlugin;
-import ru.kiviuly.skywars.game.GamePhase;
-import ru.kiviuly.skywars.game.GameSession;
-import ru.kiviuly.skywars.game.MatchPlayer;
 import ru.kiviuly.skywars.game.SkyWarsGame;
 import ru.kiviuly.skywars.menu.KitSelectMenu;
-import ru.kiviuly.skywars.util.Items;
 
 /**
  * SkyWars-специфичные события (держим вне игро-независимого ядра): селектор кита в
- * лобби и рефилл сундуков (по закрытию сундука отдаём событие игре).
+ * лобби и рефилл сундуков (по закрытию сундука отдаём событие игре). Ссылку на игру
+ * держим напрямую — в контракте {@link Match} метода {@code game()} нет.
  */
 public class SkyWarsListener implements Listener
 {
     private final SkyWarsPlugin plugin;
+    private final SkyWarsGame game;
 
-    public SkyWarsListener(SkyWarsPlugin plugin) {this.plugin = plugin;}
+    public SkyWarsListener(SkyWarsPlugin plugin, SkyWarsGame game)
+    {
+        this.plugin = plugin;
+        this.game = game;
+    }
 
     /** ПКМ по селектору кита в лобби — открыть меню выбора набора. */
     @EventHandler
@@ -35,7 +41,7 @@ public class SkyWarsListener implements Listener
         Player p = e.getPlayer();
         if (!Items.isSpecial(e.getItem(), "kit-select")) {return;}
         e.setCancelled(true);
-        GameSession s = plugin.arenas().sessionOf(p);
+        Match s = plugin.arenas().sessionOf(p);
         if (s != null && s.acceptsPlayers()) {new KitSelectMenu(plugin, s).open(p);}
     }
 
@@ -45,8 +51,8 @@ public class SkyWarsListener implements Listener
     {
         if (!(e.getInventory().getHolder() instanceof Chest chest)) {return;}
         if (!(e.getPlayer() instanceof Player p)) {return;}
-        GameSession s = plugin.arenas().sessionOf(p);
-        if (s != null && s.game() instanceof SkyWarsGame sw) {sw.onChestClosed(s, chest.getBlock());}
+        Match s = plugin.arenas().sessionOf(p);
+        if (s != null) {game.onChestClosed(s, chest.getBlock());}
     }
 
     /** Учёт урона в матче (для HUD/итогов): PvP-удар между живыми участниками. */
@@ -56,13 +62,13 @@ public class SkyWarsListener implements Listener
         if (!(e.getEntity() instanceof Player victim)) {return;}
         Player damager = resolveDamager(e.getDamager());
         if (damager == null || damager == victim) {return;}
-        GameSession s = plugin.arenas().sessionOf(victim);
+        Match s = plugin.arenas().sessionOf(victim);
         if (s == null || s.phase() != GamePhase.RUNNING) {return;}
         if (plugin.arenas().sessionOf(damager) != s) {return;}
         MatchPlayer vm = s.player(victim.getUniqueId());
         MatchPlayer dm = s.player(damager.getUniqueId());
         if (vm == null || dm == null || !vm.isAlive() || !dm.isAlive()) {return;}
-        if (s.game() instanceof SkyWarsGame sw) {sw.recordMatchDamage(s, damager.getUniqueId(), e.getFinalDamage());}
+        game.recordMatchDamage(s, damager.getUniqueId(), e.getFinalDamage());
     }
 
     /** Игрок-источник урона (прямой или через снаряд). */

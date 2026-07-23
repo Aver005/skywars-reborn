@@ -1,4 +1,6 @@
 package ru.kiviuly.skywars.menu;
+import ru.kiviuly.mg.api.menu.Menu;
+import ru.kiviuly.mg.api.menu.AnvilInputMenu;
 
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
@@ -9,8 +11,8 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.ItemStack;
 import ru.kiviuly.skywars.SkyWarsPlugin;
 import ru.kiviuly.skywars.kit.Kit;
-import ru.kiviuly.skywars.util.Items;
-import ru.kiviuly.skywars.util.Msg;
+import ru.kiviuly.mg.api.util.Items;
+import ru.kiviuly.mg.api.util.Msg;
 
 /**
  * Редактор предметов кита: админ раскладывает реальные предметы в верхней области

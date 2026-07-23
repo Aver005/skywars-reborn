@@ -10,8 +10,8 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
-import ru.kiviuly.skywars.util.Items;
-import ru.kiviuly.skywars.util.Msg;
+import ru.kiviuly.mg.api.util.Items;
+import ru.kiviuly.mg.api.util.Msg;
 
 /**
  * Категория лута: именованный взвешенный пул предметов + сколько слотов сундука ею

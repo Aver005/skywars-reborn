@@ -1,4 +1,5 @@
 package ru.kiviuly.skywars.menu;
+import ru.kiviuly.mg.api.menu.Menu;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,11 +14,11 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import ru.kiviuly.skywars.SkyWarsPlugin;
-import ru.kiviuly.skywars.game.GameSession;
+import ru.kiviuly.mg.api.game.Match;
 import ru.kiviuly.skywars.game.SkyWarsGame;
 import ru.kiviuly.skywars.kit.Kit;
-import ru.kiviuly.skywars.util.Items;
-import ru.kiviuly.skywars.util.Msg;
+import ru.kiviuly.mg.api.util.Items;
+import ru.kiviuly.mg.api.util.Msg;
 
 /** Выбор стартового набора игроком в лобби. Выбор хранится в состоянии сессии. */
 public class KitSelectMenu extends Menu
@@ -26,10 +27,10 @@ public class KitSelectMenu extends Menu
     private static final int SLOT_RANDOM = 50;
 
     private final SkyWarsPlugin plugin;
-    private final GameSession session;
+    private final Match session;
     private final Map<Integer, String> idBySlot = new HashMap<>();
 
-    public KitSelectMenu(SkyWarsPlugin plugin, GameSession session)
+    public KitSelectMenu(SkyWarsPlugin plugin, Match session)
     {
         super(54, Msg.get("kit-select.title"));
         this.plugin = plugin;

@@ -4,15 +4,6 @@ version: '${version}'
 api-version: '1.21'
 author: kiviuly
 description: SkyWars minigame (arenas, capsule start, kits, damage-race matches).
-commands:
-  sw:
-    description: SkyWars commands
-    usage: /sw help
-    aliases: [skywars]
-permissions:
-  sw.admin:
-    description: Minigame admin commands
-    default: op
-  sw.admin.debug:
-    description: Minigame debug/simulation commands
-    default: op
+depend: [MgCore]
+# Команд своих нет: арены и вход — через /mg (ядро), игро-подкоманды (kits/loot/chests)
+# — через MgCore-делегирование в SkyWarsGame.onCommand. Права — mg.admin (ядра).

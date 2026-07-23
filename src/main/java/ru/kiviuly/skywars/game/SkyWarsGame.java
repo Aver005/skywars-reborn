@@ -24,22 +24,32 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import ru.kiviuly.mg.api.MgCore;
+import ru.kiviuly.mg.api.arena.Arena;
+import ru.kiviuly.mg.api.game.GamePhase;
+import ru.kiviuly.mg.api.game.Match;
+import ru.kiviuly.mg.api.game.MatchPlayer;
+import ru.kiviuly.mg.api.game.MatchResult;
+import ru.kiviuly.mg.api.game.Minigame;
+import ru.kiviuly.mg.api.util.Items;
+import ru.kiviuly.mg.api.util.Msg;
 import ru.kiviuly.skywars.SkyWarsPlugin;
 import ru.kiviuly.skywars.kit.Kit;
 import ru.kiviuly.skywars.loot.LootCategory;
-import ru.kiviuly.skywars.util.Items;
-import ru.kiviuly.skywars.util.Msg;
+import ru.kiviuly.skywars.menu.ChestPointsMenu;
+import ru.kiviuly.skywars.menu.KitsAdminMenu;
+import ru.kiviuly.skywars.menu.LootAdminMenu;
 
 /**
  * SkyWars — соло last-man-standing на парящих островах.
  *
  * Правила игры целиком живут здесь (наследник {@link Minigame}); каркас
  * (арены, отсчёты, снапшоты, откат мира, HUD, стата) — обобщённый и об игре не знает.
- * Состояние матча держим в {@link GameSession#data()} / {@link MatchPlayer}, не в полях
+ * Состояние матча держим в {@link Match#data()} / {@link MatchPlayer}, не в полях
  * этого класса (инстанция одна на плагин, матчей может идти несколько).
  *
  * Условие победы — «последний выживший»: наследуем дефолтный {@link #checkResult}
- * ({@link GameSession#defaultResult()}). Метрика «кто больше нанесёт урона» — это
+ * ({@link Match#defaultResult()}). Метрика «кто больше нанесёт урона» — это
  * лоббийная разминка ({@link #onLobbyAttack}), а не условие победы.
  *
  * Веха-статус: M2 (разминка) — ГОТОВО; M3 (капсулы) — ГОТОВО; M4 (киты), M5 (сундуки),
@@ -47,7 +57,7 @@ import ru.kiviuly.skywars.util.Msg;
  */
 public class SkyWarsGame extends Minigame
 {
-    /** Ключ в {@link GameSession#data()}: накопленный урон разминки, uuid -> урон. */
+    /** Ключ в {@link Match#data()}: накопленный урон разминки, uuid -> урон. */
     private static final String WARMUP_KEY = "warmup-damage";
     /** Ключ: список поставленных блоков капсул (для снятия при раскрытии). */
     private static final String CAPSULE_BLOCKS_KEY = "capsule-blocks";
@@ -67,9 +77,13 @@ public class SkyWarsGame extends Minigame
     /** Для случайного выбора кита ("random"). */
     private static final Random RANDOM = new Random();
 
-    public SkyWarsGame(SkyWarsPlugin plugin)
+    /** Свой плагин: доступ к реестрам китов/лута (база Minigame даёт лишь фасад MgCore). */
+    private final SkyWarsPlugin plugin;
+
+    public SkyWarsGame(SkyWarsPlugin plugin, MgCore core)
     {
-        super(plugin);
+        super(core);
+        this.plugin = plugin;
     }
 
     @Override
@@ -81,7 +95,7 @@ public class SkyWarsGame extends Minigame
     // ===== M2: разминка «Избиение в лобби» =====
 
     @Override
-    public void onLobbyAttack(GameSession s, Player victim, Player damager, double damage)
+    public void onLobbyAttack(Match s, Player victim, Player damager, double damage)
     {
         // Реального урона нет (ядро отменило удар). Копим счёт бьющему и показываем
         // фейковый фидбек, чтобы удар в лобби ощущался как настоящий.
@@ -91,7 +105,7 @@ public class SkyWarsGame extends Minigame
 
     /** Мапа урона разминки внутри состояния сессии (создаётся лениво). */
     @SuppressWarnings("unchecked")
-    private static Map<UUID, Double> warmup(GameSession s)
+    private static Map<UUID, Double> warmup(Match s)
     {
         return (Map<UUID, Double>) s.data().computeIfAbsent(WARMUP_KEY, k -> new HashMap<UUID, Double>());
     }
@@ -112,7 +126,7 @@ public class SkyWarsGame extends Minigame
     }
 
     /** Объявить топ-3 разминки (перед капсулами) и обнулить счёт. */
-    private void announceWarmup(GameSession s)
+    private void announceWarmup(Match s)
     {
         Map<UUID, Double> warmup = warmup(s);
         s.broadcast("skywars.warmup-title");
@@ -142,7 +156,7 @@ public class SkyWarsGame extends Minigame
     // ===== M3: капсулы над островами =====
 
     @Override
-    public void onStart(GameSession s)
+    public void onStart(Match s)
     {
         announceWarmup(s);   // M2: итог разминки перед десантом
         placeChests(s);      // M5: наполнить сундуки, пока игроки ещё в капсулах
@@ -150,7 +164,7 @@ public class SkyWarsGame extends Minigame
     }
 
     @Override
-    public void onTick(GameSession s)
+    public void onTick(Match s)
     {
         releaseCapsulesIfDue(s);  // M3: по таймеру раскрыть капсулы и уронить игроков
     }
@@ -159,7 +173,7 @@ public class SkyWarsGame extends Minigame
      * Запереть каждого игрока в стеклянную капсулу на его спавне (спавн арены = точка
      * капсулы над островом). ADVENTURE на время удержания — нельзя выломать стекло.
      */
-    private void buildCapsules(GameSession s)
+    private void buildCapsules(Match s)
     {
         List<Location> placed = new ArrayList<>();
         for (Player p : s.onlinePlayers())
@@ -176,7 +190,7 @@ public class SkyWarsGame extends Minigame
     }
 
     /** Собрать одну капсулу: короб из стекла, игрок стоит на стеклянном полу внутри. */
-    private void buildCapsule(GameSession s, Location center, List<Location> placed)
+    private void buildCapsule(Match s, Location center, List<Location> placed)
     {
         World w = center.getWorld();
         if (w == null) {return;}
@@ -210,7 +224,7 @@ public class SkyWarsGame extends Minigame
 
     /** Когда истекло удержание — снять стекло, вернуть SURVIVAL и уронить на остров. */
     @SuppressWarnings("unchecked")
-    private void releaseCapsulesIfDue(GameSession s)
+    private void releaseCapsulesIfDue(Match s)
     {
         if (Boolean.TRUE.equals(s.data().get(CAPSULE_OPEN_KEY))) {return;}
         int hold = s.arena().getSetting("capsule-seconds", 5);
@@ -238,10 +252,10 @@ public class SkyWarsGame extends Minigame
     // ===== M5: сундуки с лутом =====
 
     /** Расставить и наполнить сундуки на назначенных точках; активные — в состояние сессии. */
-    private void placeChests(GameSession s)
+    private void placeChests(Match s)
     {
         Map<Location, List<String>> active = new HashMap<>();
-        for (Map.Entry<Location, List<String>> entry : s.arena().getChestSpots().entrySet())
+        for (Map.Entry<Location, List<String>> entry : s.arena().spots("chest").entrySet())
         {
             Location loc = entry.getKey();
             if (loc.getWorld() == null) {continue;}
@@ -304,7 +318,7 @@ public class SkyWarsGame extends Minigame
 
     /** Сундук закрыт: если у его категорий включён рефилл — запланировать пополнение пустых слотов. */
     @SuppressWarnings("unchecked")
-    public void onChestClosed(GameSession s, Block block)
+    public void onChestClosed(Match s, Block block)
     {
         if (s.phase() != GamePhase.RUNNING) {return;}
         Map<Location, List<String>> active = (Map<Location, List<String>>) s.data().get("chest-cats");
@@ -357,7 +371,7 @@ public class SkyWarsGame extends Minigame
     // ===== хуки жизненного цикла (наполняются по вехам M4–M6) =====
 
     @Override
-    public void onLobbyJoin(GameSession s, Player p)
+    public void onLobbyJoin(Match s, Player p)
     {
         // Селектор кита в лобби (если киты есть). ПКМ откроет меню (SkyWarsListener).
         if (!plugin.kits().isEmpty())
@@ -368,7 +382,7 @@ public class SkyWarsGame extends Minigame
     }
 
     @Override
-    public void giveLoadout(GameSession s, Player p)
+    public void giveLoadout(Match s, Player p)
     {
         // Применить выбранный игроком (или дефолтный/случайный) кит.
         Kit kit = plugin.kits().resolve(kitChoice(s, p.getUniqueId()), RANDOM);
@@ -376,19 +390,19 @@ public class SkyWarsGame extends Minigame
     }
 
     /** Выбор кита игроком хранится в состоянии сессии (ключ по uuid). */
-    public static String kitChoice(GameSession s, UUID id)
+    public static String kitChoice(Match s, UUID id)
     {
         Object o = s.data().get("kit-choice:" + id);
         return o instanceof String str ? str : null;
     }
 
-    public static void setKitChoice(GameSession s, UUID id, String choice)
+    public static void setKitChoice(Match s, UUID id, String choice)
     {
         s.data().put("kit-choice:" + id, choice);
     }
 
     @Override
-    public void onPlayerEliminated(GameSession s, MatchPlayer mp)
+    public void onPlayerEliminated(Match s, MatchPlayer mp)
     {
         // Объявление о выбывании и кредит убийств делает ядро — здесь ничего не нужно.
     }
@@ -396,7 +410,7 @@ public class SkyWarsGame extends Minigame
     // checkResult НЕ переопределяем: дефолт = последний выживший — ровно то, что нужно SkyWars.
 
     @Override
-    public void onEnd(GameSession s, MatchResult result)
+    public void onEnd(Match s, MatchResult result)
     {
         if (!result.hasWinner()) {return;}
         Map<UUID, Double> dmg = matchDamage(s);
@@ -412,7 +426,7 @@ public class SkyWarsGame extends Minigame
     }
 
     @Override
-    public List<Component> scoreboardLines(GameSession s, Player viewer)
+    public List<Component> scoreboardLines(Match s, Player viewer)
     {
         // Ядро уже рисует арену/фазу/живых/время; добавляем лидера по урону в матче.
         if (s.phase() != GamePhase.RUNNING) {return List.of();}
@@ -428,15 +442,56 @@ public class SkyWarsGame extends Minigame
     // ===== M6: учёт нанесённого в матче урона (для HUD/итогов) =====
 
     /** Учесть нанесённый в матче урон (вызывается из SkyWarsListener). */
-    public void recordMatchDamage(GameSession s, UUID damager, double amount)
+    public void recordMatchDamage(Match s, UUID damager, double amount)
     {
         if (amount <= 0) {return;}
         matchDamage(s).merge(damager, amount, Double::sum);
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<UUID, Double> matchDamage(GameSession s)
+    private static Map<UUID, Double> matchDamage(Match s)
     {
         return (Map<UUID, Double>) s.data().computeIfAbsent("match-damage", k -> new HashMap<UUID, Double>());
+    }
+
+    // ===== админ-подкоманды игры (ядро делегирует их сюда: /mg <sub> ...) =====
+
+    @Override
+    public boolean onCommand(Player p, String sub, String[] args)
+    {
+        switch (sub)
+        {
+            case "kits" -> {new KitsAdminMenu(plugin).open(p); return true;}
+            case "loot" -> {new LootAdminMenu(plugin).open(p); return true;}
+            case "chests" ->
+            {
+                if (args.length < 2) {Msg.send(p, "skywars.chests-usage"); return true;}
+                Arena arena = core.arenas().get(args[1]);
+                if (arena == null) {Msg.send(p, "errors.arena-not-found", Msg.ph("arena", args[1])); return true;}
+                new ChestPointsMenu(plugin, arena).open(p);
+                return true;
+            }
+            default -> {return false;}
+        }
+    }
+
+    @Override
+    public List<String> tabComplete(Player p, String[] args)
+    {
+        if (args.length == 1) {return List.of("kits", "loot", "chests");}
+        if (args.length == 2 && args[0].equalsIgnoreCase("chests")) {return new ArrayList<>(core.arenas().ids());}
+        return List.of();
+    }
+
+    @Override
+    public List<Component> helpLines(Player p)
+    {
+        return Msg.getList("skywars.help-admin");
+    }
+
+    @Override
+    public void onReload()
+    {
+        plugin.reloadContent();
     }
 }

@@ -1,4 +1,5 @@
 package ru.kiviuly.skywars.menu;
+import ru.kiviuly.mg.api.menu.Menu;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,11 +14,11 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import ru.kiviuly.skywars.SkyWarsPlugin;
-import ru.kiviuly.skywars.arena.Arena;
-import ru.kiviuly.skywars.arena.SetupMarkers;
+import ru.kiviuly.mg.api.arena.Arena;
+import ru.kiviuly.mg.api.arena.SetupMarkers;
 import ru.kiviuly.skywars.loot.LootCategory;
-import ru.kiviuly.skywars.util.Items;
-import ru.kiviuly.skywars.util.Msg;
+import ru.kiviuly.mg.api.util.Items;
+import ru.kiviuly.mg.api.util.Msg;
 
 /**
  * Точки-сундуки арены: выбери категорию лута — получишь маркер сундука для этой
@@ -72,7 +73,7 @@ public class ChestPointsMenu extends Menu
         {
             inventory.setItem(s, Items.filler(Material.BLACK_STAINED_GLASS_PANE));
         }
-        inventory.setItem(SLOT_COUNT, Items.named(Material.CHEST, Msg.get("chest-points.count", Msg.ph("n", arena.getChestSpots().size()))));
+        inventory.setItem(SLOT_COUNT, Items.named(Material.CHEST, Msg.get("chest-points.count", Msg.ph("n", arena.spots("chest").size()))));
         inventory.setItem(SLOT_BACK, Items.named(Material.OAK_DOOR, Msg.get("menu.back")));
     }
 
@@ -81,7 +82,7 @@ public class ChestPointsMenu extends Menu
     {
         if (!(e.getWhoClicked() instanceof Player p)) {return;}
         int raw = e.getRawSlot();
-        if (raw == SLOT_BACK) {new ArenaPointsMenu(plugin, arena).open(p); return;}
+        if (raw == SLOT_BACK) {p.closeInventory(); return;}
         String id = idBySlot.get(raw);
         if (id == null) {return;}
         if (plugin.loot().get(id) == null) {render(); return;}

@@ -1,4 +1,6 @@
 package ru.kiviuly.skywars.menu;
+import ru.kiviuly.mg.api.menu.Menu;
+import ru.kiviuly.mg.api.menu.AnvilInputMenu;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,8 +15,8 @@ import org.bukkit.inventory.ItemStack;
 import ru.kiviuly.skywars.SkyWarsPlugin;
 import ru.kiviuly.skywars.loot.LootCategory;
 import ru.kiviuly.skywars.loot.WeightedItem;
-import ru.kiviuly.skywars.util.Items;
-import ru.kiviuly.skywars.util.Msg;
+import ru.kiviuly.mg.api.util.Items;
+import ru.kiviuly.mg.api.util.Msg;
 
 /**
  * Редактор категории лута: предметы кладутся в верхнюю область (0..44), нижний ряд —
