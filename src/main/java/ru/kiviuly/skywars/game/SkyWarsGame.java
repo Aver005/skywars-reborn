@@ -82,7 +82,7 @@ public class SkyWarsGame extends Minigame
 
     public SkyWarsGame(SkyWarsPlugin plugin, MgCore core)
     {
-        super(core);
+        super(core, plugin);
         this.plugin = plugin;
     }
 
@@ -91,6 +91,10 @@ public class SkyWarsGame extends Minigame
 
     @Override
     public String displayName() {return Msg.raw("skywars.display-name");}
+
+    /** Короткий узел прав: sw.admin (плюс общий mg.admin из ядра). */
+    @Override
+    public String adminPermission() {return "sw.admin";}
 
     // ===== M2: разминка «Избиение в лобби» =====
 
@@ -466,7 +470,7 @@ public class SkyWarsGame extends Minigame
             case "chests" ->
             {
                 if (args.length < 2) {Msg.send(p, "skywars.chests-usage"); return true;}
-                Arena arena = core.arenas().get(args[1]);
+                Arena arena = core.arenas().get(id(), args[1]); // только свои арены
                 if (arena == null) {Msg.send(p, "errors.arena-not-found", Msg.ph("arena", args[1])); return true;}
                 new ChestPointsMenu(plugin, arena).open(p);
                 return true;
@@ -479,7 +483,7 @@ public class SkyWarsGame extends Minigame
     public List<String> tabComplete(Player p, String[] args)
     {
         if (args.length == 1) {return List.of("kits", "loot", "chests");}
-        if (args.length == 2 && args[0].equalsIgnoreCase("chests")) {return new ArrayList<>(core.arenas().ids());}
+        if (args.length == 2 && args[0].equalsIgnoreCase("chests")) {return new ArrayList<>(core.arenas().ids(id()));}
         return List.of();
     }
 

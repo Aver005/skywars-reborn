@@ -46,6 +46,13 @@ public final class SkyWarsPlugin extends JavaPlugin
 
         getServer().getPluginManager().registerEvents(new SkyWarsListener(this, game), this);
 
+        // Своя команда: обработчик привязан к SkyWarsGame — видит только арены SkyWars
+        // и делегирует подкоманды только ей (/sw setcenter из sbw не сработает).
+        var cmd = getCommand("sw");
+        var handler = core.commandFor(game);
+        cmd.setExecutor(handler);
+        cmd.setTabCompleter(handler);
+
         getLogger().info("SkyWars enabled, game registered: " + game.id());
     }
 
