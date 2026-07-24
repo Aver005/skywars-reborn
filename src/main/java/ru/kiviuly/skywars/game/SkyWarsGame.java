@@ -49,7 +49,7 @@ import ru.kiviuly.skywars.menu.LootAdminMenu;
  * Состояние матча держим в {@link Match#data()} / {@link MatchPlayer}, не в полях
  * этого класса (инстанция одна на плагин, матчей может идти несколько).
  *
- * Условие победы — «последний выживший»: наследуем дефолтный {@link #checkResult}
+ * Условие победы — «последний выживший»; {@link #checkResult} обычно наследует дефолт
  * ({@link Match#defaultResult()}). Метрика «кто больше нанесёт урона» — это
  * лоббийная разминка ({@link #onLobbyAttack}), а не условие победы.
  *
@@ -64,6 +64,8 @@ public class SkyWarsGame extends Minigame
     private static final String CAPSULE_BLOCKS_KEY = "capsule-blocks";
     /** Ключ: капсулы уже раскрыты (флаг, чтобы раскрыть один раз). */
     private static final String CAPSULE_OPEN_KEY = "capsule-open";
+    /** Ключ: матч стартовал соло (один игрок) — авто-финиш «последний выживший» отключён (дебаг). */
+    private static final String SOLO_DEBUG_KEY = "solo-debug";
 
     /** Материал стенок капсулы. */
     private static final Material CAPSULE_MATERIAL = Material.GLASS;
@@ -175,6 +177,7 @@ public class SkyWarsGame extends Minigame
     @Override
     public void onStart(Match s)
     {
+        markSoloDebug(s);    // дебаг: матч с одним игроком не закрываем по «последнему выжившему»
         announceWarmup(s);   // M2: итог разминки перед десантом
         placeChests(s);      // M5: наполнить сундуки, пока игроки ещё в капсулах
         buildCapsules(s);    // M3: запереть игроков в стеклянные капсулы над островами
@@ -424,7 +427,37 @@ public class SkyWarsGame extends Minigame
         // Объявление о выбывании и кредит убийств делает ядро — здесь ничего не нужно.
     }
 
-    // checkResult НЕ переопределяем: дефолт = последний выживший — ровно то, что нужно SkyWars.
+    // ===== дебаг: одиночный матч (solo-play) =====
+
+    /**
+     * Если матч стартовал с ЕДИНСТВЕННЫМ игроком и включён {@code debug.solo-play} —
+     * пометить его соло-матчем: {@link #checkResult} перестаёт завершать по «последнему
+     * выжившему» (иначе матч закрылся бы на первом же тике). Позволяет прогнать весь
+     * сценарий — капсулы, лут, киты, HUD — в одиночку.
+     */
+    private void markSoloDebug(Match s)
+    {
+        if (s.aliveCount() != 1) {return;}
+        if (!plugin.getConfig().getBoolean("debug.solo-play", true)) {return;}
+        s.data().put(SOLO_DEBUG_KEY, Boolean.TRUE);
+        s.broadcast("skywars.solo-debug");
+    }
+
+    /**
+     * Условие победы. Обычно — дефолт ядра ({@link Match#defaultResult()}: «последний
+     * выживший, или ничья по времени»). Исключение — соло-матч ({@link #markSoloDebug}):
+     * пока единственный игрок жив, матч НЕ заканчиваем; конец — его гибель (живых 0,
+     * ничья) или лимит времени (он последний выживший — победа).
+     */
+    @Override
+    public MatchResult checkResult(Match s)
+    {
+        if (!Boolean.TRUE.equals(s.data().get(SOLO_DEBUG_KEY))) {return s.defaultResult();}
+        if (s.aliveCount() == 0) {return MatchResult.draw();}
+        if (s.remainingSeconds() != 0) {return null;}
+        List<Player> alive = s.alivePlayers();
+        return alive.isEmpty() ? MatchResult.draw() : MatchResult.of(alive.get(0).getUniqueId());
+    }
 
     @Override
     public void onEnd(Match s, MatchResult result)

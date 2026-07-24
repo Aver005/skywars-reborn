@@ -240,6 +240,8 @@ admin:
 # ===== SkyWars (тексты игры; пополняется по вехам M2-M6) =====
 skywars:
   display-name: "SkyWars"
+  # --- отладка: соло-матч (авто-финиш по одному игроку отключён) ---
+  solo-debug: "<gold>[Отладка] <yellow>Соло-режим: авто-финиш при одном игроке отключён. Стоп — <white>/sw stop<yellow>."
   # --- админ (подкоманды через /mg, делегируются в SkyWarsGame) ---
   chests-usage: "<yellow>Использование: <white>/mg chests <arena>"
   help-admin:

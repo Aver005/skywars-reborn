@@ -66,13 +66,26 @@ Package root `ru.kiviuly.skywars`, плагин `SkyWars`, `depend: [MgCore]`.
 - `game/SkyWarsGame` (наследник `Minigame`) — **все правила**: разминка в лобби
   (`onLobbyAttack`), капсулы (`onStart`/`onTick`), лут-сундуки (`placeChests`/
   `fillChest`/`onChestClosed`), киты (`onLobbyJoin`/`giveLoadout`), итоги (`onEnd`),
-  HUD-строка (`scoreboardLines`), админ-подкоманды (`onCommand`).
+  HUD-строка (`scoreboardLines`), админ-подкоманды (`onCommand`), соло-отладка (`checkResult`/`markSoloDebug`).
 - `kit/{Kit,KitRegistry}` (`kits.yml`), `loot/{WeightedItem,LootCategory,LootRegistry}`
   (`loot.yml`) — глобальные, не пер-арена.
 - `listener/SkyWarsListener` — селектор кита (ПКМ), закрытие сундука (рефилл), учёт
   PvP-урона в матче. Ссылку на игру держит напрямую: в контракте `Match` нет `game()`.
 - `menu/{KitSelectMenu,KitEditorMenu,KitsAdminMenu,LootAdminMenu,LootEditorMenu,ChestPointsMenu}`
   — наследники `ru.kiviuly.mg.api.menu.Menu`.
+
+## Отладка: игра с одним игроком (solo-play)
+
+`[DONE]` `SkyWarsGame.checkResult` переопределён: если матч стартовал с ЕДИНСТВЕННЫМ
+игроком и включён `debug.solo-play` (config.yml, по умолчанию `true`), авто-финиш
+«последний выживший» отключается — иначе соло-матч закрывался бы на первом же тике
+(`GameSession.defaultResult` завершает при живых <= 1). Флаг `SOLO_DEBUG_KEY` ставится
+в `onStart` (`Match.data()`), сообщение игроку — `skywars.solo-debug`. Конец соло-матча:
+гибель игрока (ничья), лимит времени (победа) или `/sw stop`. Старт соло —
+`/sw start <арена>` (форс-старт) или `minplayers 1` (уже работало). Ядро НЕ трогали —
+условие победы по конвенции живёт в игре.
+
+`[?]` Смоук в игре не проводился (нужен сервер с MgCore + SkyWars).
 
 ## Статус проверки
 
